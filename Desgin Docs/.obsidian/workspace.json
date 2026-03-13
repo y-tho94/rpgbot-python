@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Design/Character.md",
+                "file": "Design/_Interface.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Character"
+              "title": "_Interface"
             }
           }
         ]
@@ -171,11 +171,11 @@
   },
   "active": "c643e06860dd8127",
   "lastOpenFiles": [
+    "Design/Character.md",
+    "Design/Loot.md",
     "Design/Monster.md",
     "Design/_Interface.md",
-    "Design/Character.md",
     "Design/Combat.md",
-    "Design/Loot.md",
     "__About.md",
     "Design",
     "Welcome.md",

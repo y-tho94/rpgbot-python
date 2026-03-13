@@ -23,3 +23,12 @@ class CharacterTable(Base):
     faith = Column(Integer, nullable=False)
     luck = Column(Integer, nullable=False)
     inventory = Column(JSON, nullable=False)
+
+class LootTable(Base):
+    __tablename__ = "loot"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    baseVariance = Column(Integer, nullable=False)
+    baseEffects = Column(JSON, nullable=False)
