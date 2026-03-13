@@ -3,7 +3,7 @@ from data.dataContext import Context, CharacterTable
 from services.cacheService import SimpleCache
 import json
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, update
 from services.lootService import LootService
 
 class CharacterService():
@@ -37,7 +37,17 @@ class CharacterService():
         if existing is None: 
             session.add(chTable)
         else:
-            existing = chTable
+            statement = update(CharacterTable).where(CharacterTable.id == existing.id).values(
+                charName = chTable.charName,
+                strength = chTable.strength,
+                dexterity = chTable.dexterity,
+                endurance = chTable.endurance,
+                intelligence = chTable.intelligence,
+                faith = chTable.faith,
+                luck = chTable.luck,
+                inventory = chTable.inventory 
+            )
+            session.execute(statement)
         session.commit()
         session.close()
 
