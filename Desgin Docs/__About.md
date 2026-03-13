@@ -1,0 +1,1 @@
+This is a living doc for the technical design of the RPG Bot
