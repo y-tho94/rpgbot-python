@@ -22,10 +22,15 @@ if __name__ == '__main__':
             case "create character":
                 ch = characterService.createNewCharacter(chname="Bob", player="Jake")
                 cachedChar = cache.get("Jake")
-                chJson = json.dumps(cachedChar.to_dict())
+                chJson = json.dumps(cachedChar.to_dict(), indent=4)
+                print(chJson)
+            case "get character":
+                ch = characterService.getCharacter("Jake")
+                cachedChar = cache.get("Jake")
+                chJson = json.dumps(cachedChar.to_dict(), indent=4)
                 print(chJson)
             case "generate loot":
-                l = lootService.GenerateLoot("Dagger")
+                l = lootService.GenerateLootByName("Dagger")
                 try:
                     lJson = l.to_dict()
                     print(lJson)

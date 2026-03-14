@@ -1,4 +1,5 @@
 from models.character import Character, Inventory
+from models.loot import Loot
 from data.dataContext import Context, CharacterTable
 from services.cacheService import SimpleCache
 import json
@@ -14,7 +15,7 @@ class CharacterService():
 
     def createNewCharacter(self, chname: str, player: str):
         ch = Character.new(self=Character(), name=chname)
-        ch.Inventory.Equipped.append(self._getStartingLoot())
+        ch.Inventory.Equipped = self.lootService.GenerateStartingLoot()
         chTable = CharacterTable(
             playerName = player,
             charName = ch.Name,
@@ -64,14 +65,27 @@ class CharacterService():
 
         if charObj is None:
             print(f"Character for player {playerName} not found")
-        
-        return charObj
-    
-    
-    def _getStartingLoot(self):
-        loot = self.lootService.GenerateLoot("Dagger")
-        return loot
+            return Character()
 
+        ch = Character()
+        ch.Name = charObj.charName
+        ch.Strength = charObj.strength 
+        ch.Dexterity = charObj.dexterity
+        ch.Endurance = charObj.endurance
+        ch.Intelligence = charObj.intelligence
+        ch.Faith = charObj.faith
+        ch.Luck = charObj.luck
+        inv = Inventory()
+        inv.Equipped = [Loot(**item) for item in charObj.inventory["Equipped"]]
+        inv.Stored = [Loot(**item) for item in charObj.inventory["Stored"]]
+        inv.Ability = [Loot(**item) for item in charObj.inventory["Ability"]]
+        ch.Inventory = inv
+
+        self.deriveStats(ch)
+        self.cache.set(playerName, ch)
+        return ch
+    
+    
     #calculates derived stats
     @staticmethod
     def deriveStats(ch:Character):

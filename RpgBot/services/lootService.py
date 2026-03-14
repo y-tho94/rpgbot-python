@@ -9,7 +9,7 @@ class LootService():
     def __init__(self, db: Context):
         self.db = db.engine
 
-    def GenerateLoot(self, lootName:str):
+    def GenerateLootByName(self, lootName:str):
         session = Session(bind=self.db)
         statement = select(LootTable).filter_by(name = lootName)
         try:
@@ -19,35 +19,40 @@ class LootService():
             if lootObj is None: 
                 return None
 
-            loot = Loot()
-            loot.Name = lootObj.name
-            loot.Description = lootObj.description
-            loot.Type = lootObj.type
-
-            effectsDict = lootObj.baseEffects
-            baseEffects = Effect(**effectsDict)
-            loot.Effects.Type = baseEffects.Type
-            loot.Effects.AttackRating = self._applyVariance(baseEffects.AttackRating, lootObj.baseVariance)
-            loot.Effects.DamageReduction = self._applyVariance(baseEffects.DamageReduction, lootObj.baseVariance)
-            loot.Effects.SpellDamage = self._applyVariance(baseEffects.SpellDamage, lootObj.baseVariance)
-            loot.Effects.MaxAP = self._applyVariance(baseEffects.MaxAP, lootObj.baseVariance)
-            loot.Effects.MaxHP = self._applyVariance(baseEffects.MaxHP, lootObj.baseVariance)
-            loot.Effects.Evasion = self._applyVariance(baseEffects.Evasion, lootObj.baseVariance)
-            loot.Effects.Heal = self._applyVariance(baseEffects.Heal, lootObj.baseVariance)
-            loot.Effects.CritChance = self._applyVariance(baseEffects.CritChance, lootObj.baseVariance)
-            loot.Effects.Use = baseEffects.Use
-
+            loot = Loot().fromLootTable(lootObj)
             return loot
+
+        except Exception as ex:
+            session.close()
+            print(ex)
+    
+    def GenerateLootByType(self, lootType:str):
+        session = Session(bind=self.db)
+        statement = select(LootTable).filter_by(type = lootType)
+        try:
+            lootPossibilities = session.execute(statement).scalars().all()
+            lootObj = random.choice(lootPossibilities)
+            session.close()
+
+            if lootObj is None: 
+                return None
+
+            loot = Loot().fromLootTable(lootObj)
+            return loot
+
         except Exception as ex:
             session.close()
             print(ex)
 
-        
 
-    @staticmethod
-    def _applyVariance(stat:int, variance: int):
-        if stat == 0: 
-            return 0
-        rand = random.randint(variance * -1, variance)
-        return stat + rand
+    def GenerateStartingLoot(self):
+        session = Session(bind=self.db)
+        startingInv = []
+        startingInv.append(self.GenerateLootByType("Head"))
+        startingInv.append(self.GenerateLootByType("Body"))
+        startingInv.append(self.GenerateLootByType("Legs"))
+        startingInv.append(self.GenerateLootByType("Hand"))
+
+        return startingInv
+
 
