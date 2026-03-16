@@ -1,6 +1,5 @@
 from data.dataContext import Context, LootTable
-from models.loot import Loot, Effect
-import json
+from models.loot import Loot
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import random
@@ -65,7 +64,6 @@ class LootService():
 
 
     def GenerateStartingLoot(self):
-        session = Session(bind=self.db)
         startingInv = []
         startingInv.append(self.GenerateLootByType("Head"))
         startingInv.append(self.GenerateLootByType("Body"))

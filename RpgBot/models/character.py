@@ -75,6 +75,38 @@ class Character:
         random.seed(time.time_ns())
         #range 3-16 simulates a 3d6 roll
         return random.randint(3,18)
+
+    #calculates derived stats
+    def deriveStats(self):
+        strMod = (self.Strength - 10) // 2
+        dexMod = (self.Dexterity - 10) // 2
+        endMod = (self.Endurance - 10) // 2
+        intMod = (self.Intelligence - 10) // 2
+        fthMod = (self.Faith - 10) // 2
+        #luckMod = (self.Luck - 10) // 2
+
+        self.AttackRating = strMod if strMod > dexMod else dexMod
+        self.MaxHP = 10 + endMod
+        self.MaxAP = 10 + intMod
+        self.Evasion = 10 + dexMod
+        self.MaxInventory = self.Strength if self.Strength > self.Intelligence else self.Intelligence
+        self.MaxAbilities = self.Faith if self.Faith > self.Intelligence else self.Intelligence
+        self.CritChance = self.Luck + fthMod
+
+        equipped = self.Inventory.Equipped
+        for i in equipped:
+            effects = i.Effects
+            self.AttackRating += effects.AttackRating
+            self.DamageReduction += effects.DamageReduction
+            self.SpellDamage += effects.SpellDamage
+            self.MaxHP += effects.MaxHP
+            self.MaxAP += effects.MaxAP
+            self.Evasion += effects.Evasion
+            self.CritChance += effects.CritChance
+            
+        self.CurrentHP = self.MaxHP
+        self.CurrentAP = self.MaxAP
+    
 #end class def
 
 
@@ -86,7 +118,56 @@ class Inventory():
 
     def to_dict(self):
         return {
-            "Equipped": self.Equipped,
-            "Stored": self.Stored,
-            "Ability": self.Ability
+            "Equipped":[item.to_dict() for item in self.Equipped],
+            "Stored": [item.to_dict() for item in self.Stored],
+            "Ability": [item.to_dict() for item in self.Ability],
         }
+
+    def checkInventoryForDuplicates(self):
+        equipped = self.Equipped
+        stored = self.Stored
+        ability = self.Ability
+
+        for item in equipped:
+            #get list of all items with the same name
+            duplicates = list(filter(lambda i: i.Name == item.Name, equipped))
+
+            #if more than one item with the same name...
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in equipped:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
+        
+        for item in stored:
+            #get list of all items with the same name
+            duplicates = list(filter(lambda i: i.Name == item.Name, stored))
+
+            #if more than one item with the same name...
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in stored:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
+        
+        for item in ability:
+            #get list of all items with the same name
+            duplicates = list(filter(lambda i: i.Name == item.Name, ability))
+
+            #if more than one item with the same name...
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in ability:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
+        
+        return

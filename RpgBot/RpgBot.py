@@ -1,10 +1,16 @@
 from data.dataContext import Context
 from services.characterService import CharacterService
 from services.cacheService import SimpleCache
+from services.inventoryService import InventoryService
 from services.lootService import LootService
 import json
+import os
+from dotenv import load_dotenv
+import discord
+from discord.ext import commands
 
 if __name__ == '__main__':
+    load_dotenv()
     print('starting...')
     
     #Dependency injection and startup services
@@ -12,39 +18,107 @@ if __name__ == '__main__':
     cache = SimpleCache()
     lootService = LootService(db=db)
     characterService = CharacterService(db=db, cache=cache, lootService=lootService)
+    inventoryService = InventoryService(db=db, cache=cache)
+
+    intents = discord.Intents.default()
+    intents.message_content = True
+    bot = commands.Bot(command_prefix='$', intents=intents)
+
+    #Events
+    @bot.event
+    async def on_ready():
+        print("We're alive!")
+        return 
+
+    #Character Management
+    @bot.command(brief="Delete exisiting character and create a new one")
+    async def Create(ctx, characterName=""):
+        player = ctx.author.name
+        if len(characterName.strip()) == 0:
+            await ctx.reply("Enter a valid name for your character")
+            return
+        try:
+            await characterService.CreateNewCharacter(characterName, player)
+            cachedChar = cache.get(player)
+            print(json.dumps(cachedChar.to_dict()))
+            await ctx.reply(f"Character {characterName} created successfully")
+            ch = await characterService.DescribeCharacter(player)
+            await ctx.reply(json.dumps(ch, indent=4))
+        except Exception as ex:
+            print(ex)
+            await ctx.reply("There was an error creating your character :(")
+        
+        return
+
+    @bot.command(brief="Show simple character sheet")
+    async def DescribeCharacter(ctx):
+        player = ctx.author.name
+        await characterService.GetSetChar(player)
+        ch = await characterService.DescribeCharacter(player)
+        await ctx.reply(json.dumps(ch, indent=4))
+        return
+
+    #Inventory Management
+    @bot.command(brief="Show inventory")
+    async def ShowInventory(ctx):
+        player = ctx.author.name
+        await characterService.GetSetChar(player)
+        retval = await inventoryService.ShowInventorySimple(player)
+
+        await ctx.reply(json.dumps(retval, indent=4))
+        return  
+
+    @bot.command(brief="Describe equipped item")
+    async def DescribeEquipment(ctx, itemName:str = ""):
+        if len(itemName.strip()) == 0:
+            await ctx.reply("No item given to describe")
+        player = ctx.author.name
+        await characterService.GetSetChar(player)
+        ch = cache.get(player)
+        inv = ch.Inventory.Equipped
+        
+        itemList = list(filter(lambda i: i.Name == itemName, inv))
+        if len(itemList) == 0:
+            await ctx.reply("No item of that name equipped")
+            return
+
+        item = itemList[0].to_dict()
+        await ctx.reply(json.dumps(item, indent=4))
+        return 
+
+    @bot.command(brief="Unequip Item")
+    async def Unequip(ctx, itemName:str = ""):
+        if len(itemName.strip()) == 0:
+            await ctx.reply("No item given to unequip")
+        player = ctx.author.name
+        await characterService.GetSetChar(player)
+        try:
+            await inventoryService.UnequipItem(player, itemName)
+            retval = await inventoryService.ShowInventorySimple(player)
+            await ctx.reply(json.dumps(retval, indent=4))
+        except Exception as ex:
+            print(ex)
+            await ctx.reply("Item could not be unequipped")
+
+        return
+        
+    @bot.command(brief="Equip Item")
+    async def Equip(ctx, itemName:str = ""):
+        if len(itemName.strip()) == 0:
+            await ctx.reply("No item given to equip")
+        player = ctx.author.name
+        await characterService.GetSetChar(player)
+        try:
+            await inventoryService.EquipItem(player, itemName)
+            retval = await inventoryService.ShowInventorySimple(player)
+            await ctx.reply(json.dumps(retval, indent=4))
+        except Exception as ex:
+            print(ex)
+            await ctx.reply("Item could not be equipped")
+
+        return
 
 
-    DEBUG = True
-    #simulate game in CLI
-    while(DEBUG):
-        command = input("Awaiting command: ")
-        match command:
-            case "create character":
-                ch = characterService.CreateNewCharacter(chname="Bob", player="Jake")
-                cachedChar = cache.get("Jake")
-                chJson = json.dumps(cachedChar.to_dict(), indent=4)
-                print(chJson)
-            case "get character":
-                ch = characterService.GetCharacter("Jake")
-                cachedChar = cache.get("Jake")
-                chJson = json.dumps(cachedChar.to_dict(), indent=4)
-                print(chJson)
-            case "generate loot":
-                l = lootService.GenerateLootByName("Dagger")
-                try:
-                    lJson = l.to_dict()
-                    print(lJson)
-                except Exception as ex:
-                    print(ex)
-            case "unequip test":
-                ch = characterService.UnequipItem(player="Jake", itemName="Leather Helmet")
-                cachedChar = cache.get("Jake")
-                chJson = json.dumps(cachedChar.to_dict(), indent=4)
-                print(chJson)
-            case "equip test":
-                ch = characterService.EquipItem(player="Jake", itemName="Leather Helmet")
-                cachedChar = cache.get("Jake")
-                chJson = json.dumps(cachedChar.to_dict(), indent=4)
-                print(chJson)
-    #end debug loop
 
+    token = os.getenv("DISCORD_TOKEN")
+    bot.run(token)

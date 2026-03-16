@@ -27,12 +27,17 @@
     <Compile Include="RpgBot.py" />
     <Compile Include="services\cacheService.py" />
     <Compile Include="services\characterService.py" />
+    <Compile Include="services\inventoryService.py" />
     <Compile Include="services\lootService.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="models\" />
     <Folder Include="data\" />
     <Folder Include="services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include=".env" />
+    <Content Include=".gitignore" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
