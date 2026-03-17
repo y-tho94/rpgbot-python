@@ -10,3 +10,6 @@ class SimpleCache:
 
     def delete(self, key):
         self.cache.pop(key, None)
+
+    def clear(self):
+        self.cache = {}

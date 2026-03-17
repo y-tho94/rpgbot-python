@@ -21,18 +21,22 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="cogs\tasks.py" />
     <Compile Include="data\dataContext.py" />
     <Compile Include="models\character.py" />
     <Compile Include="models\loot.py" />
+    <Compile Include="models\merchant.py" />
     <Compile Include="RpgBot.py" />
     <Compile Include="services\cacheService.py" />
     <Compile Include="services\characterService.py" />
     <Compile Include="services\inventoryService.py" />
     <Compile Include="services\lootService.py" />
+    <Compile Include="services\merchantService.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="models\" />
     <Folder Include="data\" />
+    <Folder Include="cogs\" />
     <Folder Include="services\" />
   </ItemGroup>
   <ItemGroup>

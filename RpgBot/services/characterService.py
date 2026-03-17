@@ -27,6 +27,7 @@ class CharacterService():
             faith = ch.Faith,
             luck = ch.Luck,
             inventory = {
+                "Gold": ch.Inventory.Gold,
                 "Equipped":[item.to_dict() for item in ch.Inventory.Equipped],
                 "Stored": [item.to_dict() for item in ch.Inventory.Stored],
                 "Ability": [item.to_dict() for item in ch.Inventory.Ability],
@@ -77,6 +78,7 @@ class CharacterService():
         ch.Faith = charObj.faith
         ch.Luck = charObj.luck
         inv = Inventory()
+        inv.Gold = charObj.inventory["Gold"]
         inv.Equipped = [Loot(**item) for item in charObj.inventory["Equipped"]]
         inv.Stored = [Loot(**item) for item in charObj.inventory["Stored"]]
         inv.Ability = [Loot(**item) for item in charObj.inventory["Ability"]]
@@ -91,6 +93,7 @@ class CharacterService():
 
         return {
             "Character Name": character.Name,
+            "Gold": character.Inventory.Gold,
             "HP": character.CurrentHP,
             "AP": character.CurrentAP,
             "Max Inventory": character.MaxInventory,

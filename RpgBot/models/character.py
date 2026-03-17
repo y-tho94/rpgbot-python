@@ -63,6 +63,7 @@ class Character:
             "MaxAP": self.MaxAP,
             "CurrentAP": self.CurrentAP,
             "Inventory": {
+                "Gold": self.Inventory.Gold,
                 "Equipped":[item.to_dict() for item in self.Inventory.Equipped],
                 "Stored": [item.to_dict() for item in self.Inventory.Stored],
                 "Ability": [item.to_dict() for item in self.Inventory.Ability],
@@ -83,7 +84,7 @@ class Character:
         endMod = (self.Endurance - 10) // 2
         intMod = (self.Intelligence - 10) // 2
         fthMod = (self.Faith - 10) // 2
-        #luckMod = (self.Luck - 10) // 2
+        luckMod = (self.Luck - 10) // 2
 
         self.AttackRating = strMod if strMod > dexMod else dexMod
         self.MaxHP = 10 + endMod
@@ -92,6 +93,8 @@ class Character:
         self.MaxInventory = self.Strength if self.Strength > self.Intelligence else self.Intelligence
         self.MaxAbilities = self.Faith if self.Faith > self.Intelligence else self.Intelligence
         self.CritChance = self.Luck + fthMod
+        self.DamageReduction = dexMod + endMod
+        self.SpellDamage = intMod if intMod > fthMod else fthMod
 
         equipped = self.Inventory.Equipped
         for i in equipped:
@@ -106,18 +109,22 @@ class Character:
             
         self.CurrentHP = self.MaxHP
         self.CurrentAP = self.MaxAP
+        self.Inventory.Gold = 90 + (luckMod * 10)
+
     
 #end class def
 
 
 class Inventory():
     def __init__(self):
+        self.Gold = 0
         self.Equipped = [] #list of loot
         self.Stored = [] #list of loot
         self.Ability = [] #list of abilities
 
     def to_dict(self):
         return {
+            "Gold": self.Gold,
             "Equipped":[item.to_dict() for item in self.Equipped],
             "Stored": [item.to_dict() for item in self.Stored],
             "Ability": [item.to_dict() for item in self.Ability],
