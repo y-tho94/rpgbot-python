@@ -69,7 +69,6 @@ class LootService():
         startingInv.append(self.GenerateLootByType("Body"))
         startingInv.append(self.GenerateLootByType("Legs"))
         startingInv.append(self.GenerateLootByType("Hand"))
-        startingInv.append(self.GenerateLootByType("Hand"))
 
         return startingInv
 

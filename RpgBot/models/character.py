@@ -90,7 +90,7 @@ class Character:
         return self
 
 
-    def ToCharacterTable(self, playerName):
+    def ToCharacterTable(self, playerName:str):
         chTable = CharacterTable(
             playerName = playerName,
             charName = self.Name,
@@ -147,10 +147,15 @@ class Character:
             self.Evasion += effects.Evasion
             self.CritChance += effects.CritChance
             
+        
+    def calcStartingGold(self):
+        luckMod = (self.Luck - 10) // 2
+        self.Inventory.Gold = 90 + (luckMod * 10)
+    
+    def calcMaxHPandAP(self):
         self.CurrentHP = self.MaxHP
         self.CurrentAP = self.MaxAP
-        self.Inventory.Gold = 90 + (luckMod * 10)
-
+        
     
 #end class def
 

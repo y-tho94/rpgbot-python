@@ -1,4 +1,5 @@
 from models.character import Character
+from models.loot import Loot
 from services.cacheService import SimpleCache
 from data.dataContext import Context, CharacterTable
 from sqlalchemy.orm import Session
@@ -40,7 +41,6 @@ class InventoryService():
 
         character.Inventory.Equipped = [item for item in character.Inventory.Equipped if item.Name != itemName]
         character.Inventory.Stored.append(itemToUnequip[0])
-        
         character.Inventory.checkInventoryForDuplicates()
 
         session = Session(bind = self.db)
@@ -66,13 +66,14 @@ class InventoryService():
             }
 
         itemType = itemToEquip[0].Type
+        if itemType == "Consumable":
+            return {
+                "Error": "Consumable items cannot be equipped"    
+            }
+
         #check to see if type is already equipped
-        slotIsFree = False
-        if itemType == "Hand":
-            slotIsFree = len(list(filter(lambda i: i.Type == itemType, character.Inventory.Equipped))) < 2
-        else:
-            slotIsFree = len(list(filter(lambda i: i.Type == itemType, character.Inventory.Equipped))) == 0
-        
+        availableSlots = 2 if itemType == "Accessory" else 1
+        slotIsFree = len(list(filter(lambda i: i.Type == itemType, character.Inventory.Equipped))) < availableSlots
         if slotIsFree == False:
             return {
                 "Error": f"Slot unavailable. Unequip item in {itemType}"   
@@ -80,8 +81,6 @@ class InventoryService():
 
         character.Inventory.Stored = [item for item in character.Inventory.Stored if item.Name != itemName]
         character.Inventory.Equipped.append(itemToEquip[0])
-
-        
         character.Inventory.checkInventoryForDuplicates()
 
         session = Session(bind = self.db)
@@ -215,3 +214,43 @@ class InventoryService():
         session.close()
 
         self.cache.set(player, character)
+        return
+
+    async def UseItem(self, player:str, target:str, itemName:str):
+        character = self.cache.get(player) or Character()
+        targetCh = self.cache.get(target) or Character()
+
+        itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
+        if len(itemToUse) == 0:
+            return {
+                "Error": "No item of that name in stored inventory"    
+            }
+
+        item = itemToUse[0] or Loot()
+        useEffects = item.Effects.Use
+
+        if len(useEffects) == 0:
+            return {
+                "Error": f"{itemName} has no on-use effects"    
+            }
+
+        for e in useEffects:
+            tokens = e.split()
+            effect = tokens[0]
+            ammount = int(tokens[1])
+            eType = None if len(tokens) < 3 else tokens[2]
+
+            summary = []
+            match effect:
+                case "Heal":
+                    newHP = targetCh.CurrentHP + ammount
+                    targetCh.CurrentHP = newHP if newHP <= targetCh.MaxHP else targetCh.MaxHP
+                    summary.append(f"{player} healed {target} for {ammount} HP")
+
+            
+            await self.DiscardItem(player, itemName)
+            self.cache.set(target, targetCh)
+
+            return {
+                "Summary" : summary    
+            }

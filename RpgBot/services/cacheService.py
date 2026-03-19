@@ -1,7 +1,6 @@
 class SimpleCache:
     def __init__(self):
-        self.cache = {}
-
+        self.cache = {} 
     def set(self, key, value):
         self.cache[key] = value
 

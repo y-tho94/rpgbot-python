@@ -3,7 +3,7 @@ from models.loot import Loot
 from data.dataContext import Context, CharacterTable
 from services.cacheService import SimpleCache
 from sqlalchemy.orm import Session
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from services.lootService import LootService
 
 class CharacterService():
@@ -15,6 +15,7 @@ class CharacterService():
     async def CreateNewCharacter(self, chname: str, player: str):
         ch = Character.new(self=Character(), name=chname)
         ch.Inventory.Equipped = self.lootService.GenerateStartingLoot()
+        ch.Inventory.Stored = [self.lootService.GenerateLootByType("Consumable")]
         ch.Inventory.checkInventoryForDuplicates()
 
         chTable = ch.ToCharacterTable(player)
@@ -40,6 +41,8 @@ class CharacterService():
         session.close()
 
         ch.deriveStats()
+        ch.calcStartingGold()
+        ch.calcMaxHPandAP()
 
         self.cache.set(player, ch)
         return ch
@@ -57,9 +60,35 @@ class CharacterService():
         ch = Character().FromCharacterTable(charObj)
 
         ch.deriveStats()
+        ch.calcMaxHPandAP()
         self.cache.set(player, ch)
         return ch
     
+    async def SaveCharacters(self):
+        allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant"})
+
+        for player in allActivePlayers:
+            ch = self.cache.get(player) or Character()
+
+            chTable = ch.ToCharacterTable(player)
+            session = Session(bind=self.db)
+            
+            statement = update(CharacterTable).where(CharacterTable.playerName == player).values(
+                charName = chTable.charName,
+                strength = chTable.strength,
+                dexterity = chTable.dexterity,
+                endurance = chTable.endurance,
+                intelligence = chTable.intelligence,
+                faith = chTable.faith,
+                luck = chTable.luck,
+                inventory = chTable.inventory 
+            )
+            session.execute(statement)
+            session.commit()
+            session.close()
+            continue
+        return
+
     async def DescribeCharacter(self, player:str):
         character = self.cache.get(player)
 
@@ -89,6 +118,14 @@ class CharacterService():
             await self.GetCharacter(player)
 
         return
+
+    async def KillCharacter(self, player:str):
+        self.cache.delete(player)
+
+        session = Session(bind = self.db)
+        statement = delete(CharacterTable).where(CharacterTable.playerName==player)
+        session.execute(statement)
+        session.commit()
 
     
     
