@@ -1,4 +1,4 @@
-from data.dataContext import Context, LootTable
+from data.dataContext import AbilityTable, Context, LootTable
 from models.loot import Loot
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -8,7 +8,7 @@ class LootService():
     def __init__(self, db: Context):
         self.db = db.engine
     
-    def GenerateLoot(self):
+    async def GenerateLoot(self):
         session = Session(bind=self.db)
         statement = select(LootTable)
         try:
@@ -20,6 +20,8 @@ class LootService():
                 return None
 
             loot = Loot().fromLootTable(lootObj)
+            if loot.Name == "Skill Scroll":
+                loot = await self._generateScroll(loot)
             return loot
 
         except Exception as ex:
@@ -27,7 +29,7 @@ class LootService():
             print(ex)
 
 
-    def GenerateLootByName(self, lootName:str):
+    async def GenerateLootByName(self, lootName:str):
         session = Session(bind=self.db)
         statement = select(LootTable).filter_by(name = lootName)
         try:
@@ -38,13 +40,16 @@ class LootService():
                 return None
 
             loot = Loot().fromLootTable(lootObj)
+
+            if lootName == "Skill Scroll":
+                loot = await self._generateScroll(loot)
             return loot
 
         except Exception as ex:
             session.close()
             print(ex)
     
-    def GenerateLootByType(self, lootType:str):
+    async def GenerateLootByType(self, lootType:str):
         session = Session(bind=self.db)
         statement = select(LootTable).filter_by(type = lootType)
         try:
@@ -56,6 +61,8 @@ class LootService():
                 return None
 
             loot = Loot().fromLootTable(lootObj)
+            if loot.Name == "Skill Scroll":
+                loot = await self._generateScroll(loot)
             return loot
 
         except Exception as ex:
@@ -63,13 +70,27 @@ class LootService():
             print(ex)
 
 
-    def GenerateStartingLoot(self):
+    async def GenerateStartingLoot(self):
         startingInv = []
-        startingInv.append(self.GenerateLootByType("Head"))
-        startingInv.append(self.GenerateLootByType("Body"))
-        startingInv.append(self.GenerateLootByType("Legs"))
-        startingInv.append(self.GenerateLootByType("Hand"))
+        startingInv.append(await self.GenerateLootByType("Head"))
+        startingInv.append(await self.GenerateLootByType("Body"))
+        startingInv.append(await self.GenerateLootByType("Legs"))
+        startingInv.append(await self.GenerateLootByType("Hand"))
 
         return startingInv
 
+    async def _generateScroll(self, loot:Loot):
+        session = Session(bind=self.db)
+        statement = select(AbilityTable)
+
+        abilities = session.execute(statement).scalars().all()
+        ability = random.choice(abilities)
+        session.close()
+
+        abilityName = ability.name
+
+        learnEffect = loot.Effects.Use[0]
+        learnEffect = learnEffect.replace("***", abilityName)
+        loot.Effects.Use[0] = learnEffect
+        return loot
 

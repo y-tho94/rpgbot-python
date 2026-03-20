@@ -14,9 +14,10 @@ class CharacterService():
 
     async def CreateNewCharacter(self, chname: str, player: str):
         ch = Character.new(self=Character(), name=chname)
-        ch.Inventory.Equipped = self.lootService.GenerateStartingLoot()
-        ch.Inventory.Stored = [self.lootService.GenerateLootByType("Consumable")]
+        ch.Inventory.Equipped = await self.lootService.GenerateStartingLoot()
+        ch.Inventory.Stored = [await self.lootService.GenerateLootByType("Consumable"), await self.lootService.GenerateLootByName("Skill Scroll")]
         ch.Inventory.checkInventoryForDuplicates()
+        ch.calcStartingGold()
 
         chTable = ch.ToCharacterTable(player)
 
@@ -41,7 +42,6 @@ class CharacterService():
         session.close()
 
         ch.deriveStats()
-        ch.calcStartingGold()
         ch.calcMaxHPandAP()
 
         self.cache.set(player, ch)
@@ -63,7 +63,26 @@ class CharacterService():
         ch.calcMaxHPandAP()
         self.cache.set(player, ch)
         return ch
-    
+
+    async def SaveCharacter(self, player:str, ch:Character):
+        chTable = ch.ToCharacterTable(player)
+        session = Session(bind=self.db)
+            
+        statement = update(CharacterTable).where(CharacterTable.playerName == player).values(
+            charName = chTable.charName,
+            strength = chTable.strength,
+            dexterity = chTable.dexterity,
+            endurance = chTable.endurance,
+            intelligence = chTable.intelligence,
+            faith = chTable.faith,
+            luck = chTable.luck,
+            inventory = chTable.inventory 
+        )
+        session.execute(statement)
+        session.commit()
+        session.close()
+        return
+
     async def SaveCharacters(self):
         allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant"})
 

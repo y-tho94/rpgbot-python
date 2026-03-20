@@ -1,14 +1,16 @@
 from models.character import Character
 from models.loot import Loot
 from services.cacheService import SimpleCache
+from services.abilityService import AbilityService
 from data.dataContext import Context, CharacterTable
 from sqlalchemy.orm import Session
 from sqlalchemy import update
 
 class InventoryService():
-    def __init__(self, db: Context, cache: SimpleCache):
+    def __init__(self, db: Context, cache: SimpleCache, abilityService: AbilityService):
         self.db = db.engine
         self.cache = cache
+        self.abilityService = abilityService
         return
 
     
@@ -20,8 +22,7 @@ class InventoryService():
         return {
             "Gold": inv.Gold,
             "Equipped": [item.Name for item in inv.Equipped],
-            "Stored": [item.Name for item in inv.Stored],
-            "Ability": [item.Name for item in inv.Ability]
+            "Stored": [item.Name for item in inv.Stored]
         }
 
 
@@ -237,17 +238,26 @@ class InventoryService():
         for e in useEffects:
             tokens = e.split()
             effect = tokens[0]
-            ammount = int(tokens[1])
             eType = None if len(tokens) < 3 else tokens[2]
 
             summary = []
             match effect:
                 case "Heal":
-                    newHP = targetCh.CurrentHP + ammount
+                    amount = int(tokens[1])
+                    newHP = targetCh.CurrentHP + amount
                     targetCh.CurrentHP = newHP if newHP <= targetCh.MaxHP else targetCh.MaxHP
-                    summary.append(f"{player} healed {target} for {ammount} HP")
+                    summary.append(f"{character.Name} healed {targetCh.Name} for {amount} HP")
+                case "Replenish":
+                    amount = int(tokens[1])
+                    newAP = targetCh.CurrentAP + amount
+                    targetCh.CurrentAP = newAP if newAP <= targetCh.MaxAP else targetCh.MaxAP
+                    summary.append(f"{character.Name} replenished {targetCh.Name} for {amount} AP")
+                case "Learn":
+                    abilityName = tokens[1]
+                    ability = await self.abilityService.GenerateAbilityByName(abilityName)
+                    if ability is not None:
+                        summary.append(await self.abilityService.LearnAbility(target, ability))
 
-            
             await self.DiscardItem(player, itemName)
             self.cache.set(target, targetCh)
 

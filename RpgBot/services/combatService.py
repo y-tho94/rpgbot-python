@@ -1,3 +1,4 @@
+from models.ability import Ability
 from models.character import Character
 from services.cacheService import SimpleCache
 import random
@@ -24,17 +25,124 @@ class CombatService():
         self.cache.set(player, ch)
         self.cache.set(target, targetCh)
 
-        if ch.CurrentHP < 0: 
-            targetCh.Inventory.Gold += ch.Inventory.Gold
-            self.cache.set(target, targetCh)
-            summary.append(f"{ch.Name} has fallen and dropped {ch.Inventory.Gold} Gold")
-            await self.characterService.KillCharacter(player)
-        if targetCh.CurrentHP < 0:
-            ch.Inventory.Gold += targetCh.Inventory.Gold
-            self.cache.set(player, ch)
-            summary.append(f"{targetCh.Name} has fallen and dropped {targetCh.Inventory.Gold} Gold")
-            await self.characterService.KillCharacter(target)
+        if await self._checkForDeath(player, ch, target, targetCh): 
+            summary.append(f"{ch.Name} has fallen and dropped their Gold")
+            
+            
+        if await self._checkForDeath(target, targetCh, player, ch):
+            summary.append(f"{targetCh.Name} has fallen and dropped their Gold")
+        
+        return {
+            "Summary": summary    
+        }
 
+    async def UseAbilityPvP(self, player:str, target:str, abilityName):
+        ch = self.cache.get(player) or Character()
+        targetCh = self.cache.get(target) or Character()
+
+        abilityToUse = list(filter(lambda a: a.Name == abilityName, ch.Inventory.Ability))
+        if len(abilityToUse) == 0:
+            return {
+                "Error": "No ability of that name available"
+            }
+        
+        ability = abilityToUse[0] or Ability()
+
+        #check if enough AP
+        if ch.CurrentAP < ability.Cost:
+            return {
+                "Error": "Insufficient AP"    
+            }
+
+        #deplete AP by cost
+        ch.CurrentAP -= ability.Cost
+
+        #apply effects
+        summary = [f"{ch.Name} used {ability.Name}"]
+
+        abilityType = ability.Type
+        effectType = ability.Effects.Type
+
+        modifier = 0
+
+        match effectType:
+            case "Holy":
+                modifier += ((ch.Faith - 10) // 2)  + ch.SpellDamage
+            case _:
+                modifier += ((ch.Intelligence - 10) // 2)  + ch.SpellDamage
+
+        healAmount = 0 if ability.Effects.Heal == 0 else ability.Effects.Heal + modifier
+        selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
+        inflictAmount = 0 if ability.Effects.Inflict == 0 else ability.Effects.Inflict + modifier
+        selfInflictAmount = 0 if ability.Effects.SelfInflict == 0 else ability.Effects.SelfInflict
+        boostAmount = 0 if len(ability.Effects.Boost) == 0 else modifier
+        debuffAmount = 0 if len(ability.Effects.Debuff) == 0 else modifier
+
+        #boost stats
+        for stat in ability.Effects.Boost:
+            summary.append(f"{ch.Name} boosted {targetCh.Name}'s {stat} by {boostAmount}")
+            match stat:
+                case "AttackRating":
+                    targetCh.AttackRating += boostAmount
+                case "DamageReduction":
+                    targetCh.DamageReduction += boostAmount
+                case "SpellDamage":
+                    targetCh.SpellDamage += boostAmount
+                case "Evasion":
+                    targetCh.Evasion += boostAmount
+                case "CritChance":
+                    targetCh.CritChance += boostAmount
+        
+        #debuff stats
+        for stat in ability.Effects.Debuff:
+            summary.append(f"{ch.Name} lowered {targetCh.Name}'s {stat} by {debuffAmount}")
+            match stat:
+                case "AttackRating":
+                    targetCh.AttackRating -= debuffAmount
+                case "DamageReduction":
+                    targetCh.DamageReduction -= debuffAmount
+                case "SpellDamage":
+                    targetCh.SpellDamage -= debuffAmount
+                case "Evasion":
+                    targetCh.Evasion -= debuffAmount
+                case "CritChance":
+                    targetCh.CritChance -= debuffAmount
+        
+        #self heal
+        selfNewHP = ch.CurrentHP + selfHealAmount - selfInflictAmount
+        ch.CurrentHP = selfNewHP if selfNewHP <= ch.MaxHP else ch.MaxHP
+        if selfHealAmount > 0:
+            summary.append(f"{ch.Name} healed for {selfHealAmount} HP")
+        
+        #self inflict
+        if selfInflictAmount > 0:
+            summary.append(f"{ch.Name} hurt themself for {inflictAmount} {effectType} damage")
+
+        #heal target
+        newHP = targetCh.CurrentHP + healAmount - inflictAmount
+        targetCh.CurrentHP =  newHP if newHP <= targetCh.MaxHP else targetCh.MaxHP
+        if healAmount > 0:
+            summary.append(f"{ch.Name} healed {targetCh.Name} for {healAmount} HP")
+
+        #damage target
+        if inflictAmount > 0:
+            summary.append(f"{ch.Name} inflicted {inflictAmount} {effectType} damage to {targetCh.Name}")
+
+        #target retaliates
+        if inflictAmount > 0 or len(ability.Effects.Debuff) > 0:
+            summary.append(self._combatMath(targetCh, ch))
+        #save character states
+        self.cache.set(player, ch)
+        if target != player:
+            self.cache.set(target, targetCh)
+
+        if await self._checkForDeath(player, ch, target, targetCh): 
+            summary.append(f"{ch.Name} has fallen and dropped their Gold")
+            
+        if target != "self":
+            if await self._checkForDeath(target, targetCh, player, ch):
+                summary.append(f"{targetCh.Name} has fallen and dropped their Gold")
+        
         return {
             "Summary": summary    
         }
@@ -64,3 +172,18 @@ class CombatService():
             attackSummary += f"for {damageReal} {damageType} damage"
             
             return attackSummary
+        return
+
+    async def _checkForDeath(self, player:str, ch:Character, target:str, targetCh:Character):
+        charIsDead = False
+        if ch.CurrentHP <= 0:
+            charIsDead = True
+            targetCh.Inventory.Gold += ch.Inventory.Gold
+            ch.Inventory.Gold = 0
+            await self.characterService.SaveCharacter(player, ch)
+            self.cache.delete(player)
+
+            await self.characterService.SaveCharacter(target, targetCh)
+            self.cache.set(target, targetCh)
+        return charIsDead
+

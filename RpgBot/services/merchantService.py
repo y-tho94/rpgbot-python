@@ -24,7 +24,7 @@ class MerchantService():
     async def CreateMerchant(self):
         merchant = Merchant()
         for i in range(10):
-            item = self.lootService.GenerateLoot()
+            item = await self.lootService.GenerateLoot()
             ware = Wares()
             ware.Item = item
             ware.Value = self.AppraiseItem(item)
@@ -60,7 +60,7 @@ class MerchantService():
             value += val if val > 0 else (val * -1)
             continue
 
-        value += len(item.Effects.Use) * 100
+        value += len(item.Effects.Use) * 10
 
         return (value * 10 if value > 1 else 1)
 

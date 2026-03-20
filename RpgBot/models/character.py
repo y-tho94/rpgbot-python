@@ -1,6 +1,7 @@
 import random
 import time
 from data.dataContext import CharacterTable
+from models.ability import Ability
 from models.loot import Loot
 
 class Character:
@@ -84,7 +85,7 @@ class Character:
         inv.Gold = chTable.inventory["Gold"]
         inv.Equipped = [Loot(**item) for item in chTable.inventory["Equipped"]]
         inv.Stored = [Loot(**item) for item in chTable.inventory["Stored"]]
-        inv.Ability = [Loot(**item) for item in chTable.inventory["Ability"]]
+        inv.Ability = [Ability(**item) for item in chTable.inventory["Ability"]]
         self.Inventory = inv
         
         return self

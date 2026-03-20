@@ -32,3 +32,13 @@ class LootTable(Base):
     type = Column(String, nullable=False)
     baseVariance = Column(Integer, nullable=False)
     baseEffects = Column(JSON, nullable=False)
+
+class AbilityTable(Base):
+    __tablename__ = "ability"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    cost = Column(Integer, nullable=False)
+    baseVariance = Column(Integer, nullable=False)
+    baseEffects = Column(JSON, nullable=False)
