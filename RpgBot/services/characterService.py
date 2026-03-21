@@ -1,3 +1,4 @@
+from calendar import c
 from models.character import Character, Inventory
 from models.loot import Loot
 from data.dataContext import Context, CharacterTable
@@ -134,9 +135,19 @@ class CharacterService():
         cachedChar = self.cache.get(player)
 
         if cachedChar is None:
-            await self.GetCharacter(player)
+            ch = await self.GetCharacter(player)
+            if ch is None:
+                return {
+                    "Error": f"Character for {player} does not exist",
+                    "Character" : Character()
+                } 
+            else:
+                cachedChar = ch
 
-        return
+        return {
+            "Error" : "",
+            "Character": cachedChar
+        }
 
     async def KillCharacter(self, player:str):
         self.cache.delete(player)

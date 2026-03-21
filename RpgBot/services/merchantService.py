@@ -77,7 +77,7 @@ class MerchantService():
         itemToBuy = list(filter(lambda i: i.Item.Name == itemName, merchant.Inventory.Wares))
         if len(itemToBuy) == 0:
             return {
-                "Error": "Item does not exist in merchant inventory"
+                "Error": f"Item {itemName} does not exist in merchant inventory"
             }
 
         itemVal = itemToBuy[0].Value

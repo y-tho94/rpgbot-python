@@ -22,6 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="cogs\ability_cog.py" />
+    <Compile Include="cogs\admin_cog.py" />
     <Compile Include="cogs\character_cog.py" />
     <Compile Include="cogs\combat_cog.py" />
     <Compile Include="cogs\merchant_cog.py" />

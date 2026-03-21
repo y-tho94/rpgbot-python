@@ -1,9 +1,11 @@
 from cogs.ability_cog import AbilityCog
+from cogs.admin_cog import AdminCog
 from cogs.character_cog import CharacterCog
 from cogs.combat_cog import CombatCog
 from cogs.merchant_cog import MerchantCog
 from cogs.tasks import TasksCog
 from data.dataContext import Context
+from models import merchant
 from services.abilityService import AbilityService
 from services.characterService import CharacterService
 from services.cacheService import SimpleCache
@@ -38,11 +40,12 @@ if __name__ == '__main__':
     intents.guilds = True
     bot = commands.Bot(command_prefix='$', intents=intents)
 
-    GENERAL_CHANNEL_ID = "1482746470909345916"
+    genChannelId = int(os.getenv("GENERAL_CHANNEL_ID"))
 
     #Events
     @bot.event
     async def on_ready():
+        await bot.add_cog(AdminCog(bot, cache, characterService, abilityService, lootService, inventoryService, merchantService))
         await bot.add_cog(TasksCog(bot, cache, characterService))
         await bot.add_cog(MerchantCog(bot, cache, merchantService, characterService))
         await bot.add_cog(CharacterCog(bot, cache, characterService))
@@ -186,29 +189,29 @@ if __name__ == '__main__':
         return
 
     @bot.command(brief="Give player a stored item")
-    async def GiveItem(ctx, target:str="", itemName:str=""):
-        if len(target.strip()) == 0:
-            await ctx.reply("No player to give item identified")
+    async def GiveItem(ctx, target:discord.Member="", itemName:str=""):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item given to trade")
 
         player = ctx.author.name
         await characterService.GetSetChar(player)
-        await characterService.GetSetChar(target)
+        await characterService.GetSetChar(target.name)
         
         try:
-            response = await inventoryService.GiveItem(player, target, itemName)
+            response = await inventoryService.GiveItem(player, target.name, itemName)
             if response is not None:
                 await ctx.reply(json.dumps(response, indent=4))
             else:
-                await ctx.reply(f"@{player} gave @{target} '{itemName}'")
+                channel = bot.get_channel(genChannelId)
+                sender = bot.get_user(ctx.author.id)
+                await channel.send(f"{sender.mention} gave {target.mention} '{itemName}'")
         except Exception as ex:
             print(ex)
             await ctx.reply("Trade could not be completed")
         return
     
     @bot.command(brief="Give Player Gold")
-    async def GiveGold(ctx, target:str="", amount:str=""):
+    async def GiveGold(ctx, target:discord.Member="", amount:str=""):
         if len(target.strip()) == 0:
             await ctx.reply("No player to give gold identified")
             return
@@ -224,14 +227,16 @@ if __name__ == '__main__':
         
         player = ctx.author.name
         await characterService.GetSetChar(player)
-        await characterService.GetSetChar(target)
+        await characterService.GetSetChar(target.name)
 
         try:
-            response = await inventoryService.GiveGold(player, target, amountInt)
+            response = await inventoryService.GiveGold(player, target.name, amountInt)
             if response is not None:
                 await ctx.reply(json.dumps(response, indent=4))
             else:
-                await ctx.reply(f"@{player} gave @{target} {amount} Gold")
+                channel = bot.get_channel(genChannelId)
+                sender = bot.get_user(ctx.author.id)
+                await channel.send(f"{sender.mention} gave {target.mention} {amount} Gold")
         except Exception as ex:
             print(ex)
             await ctx.reply("Trade could not be completed")
@@ -263,7 +268,7 @@ if __name__ == '__main__':
         return
 
     @bot.command(brief="Use an item in stored inventory on target or self")
-    async def UseItem(ctx, itemName="", target="self"):
+    async def UseItem(ctx, itemName="", target:discord.Member="self"):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item name given")
             return
@@ -271,10 +276,10 @@ if __name__ == '__main__':
         player = ctx.author.name
         await characterService.GetSetChar(player)
         if target == "self":
-            target = player
-        await characterService.GetSetChar(target)
+            target = ctx.author
+        await characterService.GetSetChar(target.name)
 
-        response = await inventoryService.UseItem(player, target, itemName)
+        response = await inventoryService.UseItem(player, target.name, itemName)
         await ctx.reply(json.dumps(response, indent=4))
         return
 

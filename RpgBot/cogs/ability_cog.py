@@ -5,7 +5,7 @@ from services.abilityService import AbilityService
 import json
 
 class AbilityCog(commands.Cog):
-    def __init__(self, bot, cache:SimpleCache, characterService:CharacterService, abilityService:AbilityService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, characterService:CharacterService, abilityService:AbilityService):
         self.bot = bot
         self.cache = cache
         self.characterService = characterService

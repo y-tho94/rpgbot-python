@@ -1,3 +1,4 @@
+from calendar import c
 from models.ability import Ability
 from models.character import Character
 from services.cacheService import SimpleCache
@@ -74,7 +75,7 @@ class CombatService():
         healAmount = 0 if ability.Effects.Heal == 0 else ability.Effects.Heal + modifier
         selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
         inflictAmount = 0 if ability.Effects.Inflict == 0 else ability.Effects.Inflict + modifier
-        selfInflictAmount = 0 if ability.Effects.SelfInflict == 0 else ability.Effects.SelfInflict
+        selfInflictAmount = ability.Effects.SelfInflict
         boostAmount = 0 if len(ability.Effects.Boost) == 0 else modifier
         debuffAmount = 0 if len(ability.Effects.Debuff) == 0 else modifier
 
@@ -116,17 +117,24 @@ class CombatService():
         
         #self inflict
         if selfInflictAmount > 0:
-            summary.append(f"{ch.Name} hurt themself for {inflictAmount} {effectType} damage")
+            summary.append(f"{ch.Name} hurt themself for {selfInflictAmount} {effectType} damage")
 
         #heal target
-        newHP = targetCh.CurrentHP + healAmount - inflictAmount
+        critChance = random.randint(1,100)
+        critStr = ""
+        if ch.CritChance >= critChance:
+            inflictAmount *= 2
+            critStr = "critically "
+        damageTaken = inflictAmount - targetCh.DamageReduction if inflictAmount - targetCh.DamageReduction > 0 else 0
+
+        newHP = targetCh.CurrentHP + healAmount - damageTaken
         targetCh.CurrentHP =  newHP if newHP <= targetCh.MaxHP else targetCh.MaxHP
         if healAmount > 0:
             summary.append(f"{ch.Name} healed {targetCh.Name} for {healAmount} HP")
 
         #damage target
         if inflictAmount > 0:
-            summary.append(f"{ch.Name} inflicted {inflictAmount} {effectType} damage to {targetCh.Name}")
+            summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {targetCh.Name}")
 
         #target retaliates
         if inflictAmount > 0 or len(ability.Effects.Debuff) > 0:

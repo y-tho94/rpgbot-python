@@ -149,10 +149,33 @@ class InventoryService():
             self.cache.set(targetPlayer, target)
         except Exception as ex:
             print(ex)
+            session.rollback()
             return {
                 "Error": "Trade could not be completed"    
             }
+        session.close()
+
+        return
+    
+    async def AdminGiveGold(self, targetPlayer:str, amount:int):
+        target = self.cache.get(targetPlayer)
+
+        target.Inventory.Gold += amount
+
+        session = Session(bind = self.db)
+        try:
+            targetTable = target.ToCharacterTable(targetPlayer)
+            statement = update(CharacterTable).where(CharacterTable.playerName == targetPlayer).values(inventory = targetTable.inventory)
+            session.execute(statement)
+
+            session.commit()
+            self.cache.set(targetPlayer, target)
+        except Exception as ex:
+            print(ex)
             session.rollback()
+            return {
+                "Error": "Trade could not be completed"    
+            }
         session.close()
 
         return
@@ -186,10 +209,10 @@ class InventoryService():
             self.cache.set(targetPlayer, target)
         except Exception as ex:
             print(ex)
+            session.rollback()
             return {
                 "Error": "Trade could not be completed"    
             }
-            session.rollback()
         session.close()
 
         return
