@@ -72,3 +72,10 @@ class AbilityCog(commands.Cog):
         await self.characterService.GetSetChar(player)
 
         response = await self.abilityService.ForgetAbility(player, abilityName)
+        if response is not None:
+            await ctx.reply(json.dumps(response, indent=4))
+            return
+        await ctx.reply(f"You forgot {abilityName}")
+        retval = await self.abilityService.ShowAbilityList(player)
+        await ctx.reply(json.dumps(retval, indent=4))
+        return

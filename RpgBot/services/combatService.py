@@ -26,11 +26,11 @@ class CombatService():
         self.cache.set(player, ch)
         self.cache.set(target, targetCh)
 
-        if await self._checkForDeath(player, ch, target, targetCh): 
+        if await self._checkForDeath(player, ch, targetCh): 
             summary.append(f"{ch.Name} has fallen and dropped their Gold")
             
             
-        if await self._checkForDeath(target, targetCh, player, ch):
+        if await self._checkForDeath(target, targetCh, ch):
             summary.append(f"{targetCh.Name} has fallen and dropped their Gold")
         
         return {
@@ -144,11 +144,11 @@ class CombatService():
         if target != player:
             self.cache.set(target, targetCh)
 
-        if await self._checkForDeath(player, ch, target, targetCh): 
+        if await self._checkForDeath(player, ch, targetCh): 
             summary.append(f"{ch.Name} has fallen and dropped their Gold")
             
         if target != "self":
-            if await self._checkForDeath(target, targetCh, player, ch):
+            if await self._checkForDeath(target, targetCh, ch):
                 summary.append(f"{targetCh.Name} has fallen and dropped their Gold")
         
         return {
@@ -182,7 +182,7 @@ class CombatService():
             return attackSummary
         return
 
-    async def _checkForDeath(self, player:str, ch:Character, target:str, targetCh:Character):
+    async def _checkForDeath(self, player:str, ch:Character, targetCh:Character):
         charIsDead = False
         if ch.CurrentHP <= 0:
             charIsDead = True
@@ -190,8 +190,5 @@ class CombatService():
             ch.Inventory.Gold = 0
             await self.characterService.SaveCharacter(player, ch)
             self.cache.delete(player)
-
-            await self.characterService.SaveCharacter(target, targetCh)
-            self.cache.set(target, targetCh)
         return charIsDead
 

@@ -11,8 +11,19 @@ class CharacterCog(commands.Cog):
         return
 
     @commands.command(brief="Delete exisiting character and create a new one")
-    async def Create(self, ctx, *, characterName=""):
+    async def Create(self, ctx:commands.Context, *, characterName=""):
+        characterName = characterName.replace("\"", "")
         player = ctx.author.name
+        member = ctx.author
+        try:
+            checkforname = ctx.guild.get_member_named(characterName)
+            if checkforname is not None and checkforname.id != member.id:
+                await ctx.reply("That name is already taken by another player. Please choose a different name")
+                return
+            await member.edit(nick=characterName)
+        except Exception as ex:
+            print(ex)
+
         if len(characterName.strip()) == 0:
             await ctx.reply("Enter a valid name for your character")
             return

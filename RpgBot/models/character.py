@@ -151,7 +151,7 @@ class Character:
         
     def calcStartingGold(self):
         luckMod = (self.Luck - 10) // 2
-        self.Inventory.Gold = 90 + (luckMod * 10)
+        self.Inventory.Gold = 180 + (luckMod * 20)
     
     def calcMaxHPandAP(self):
         self.CurrentHP = self.MaxHP

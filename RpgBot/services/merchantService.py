@@ -23,7 +23,7 @@ class MerchantService():
 
     async def CreateMerchant(self):
         merchant = Merchant()
-        for i in range(10):
+        for i in range(9):
             item = await self.lootService.GenerateLoot()
             ware = Wares()
             ware.Item = item
@@ -31,6 +31,13 @@ class MerchantService():
 
             merchant.Inventory.Wares.append(ware)
             continue
+        scroll = await self.lootService.GenerateLootByName("Skill Scroll")
+
+        scrollWare = Wares()
+        scrollWare.Item = scroll
+        scrollWare.Value = self.AppraiseItem(scroll)
+        merchant.Inventory.Wares.append(scrollWare)
+
         merchant.Inventory.checkInventoryForDuplicates()
         self.cache.set("Wandering Merchant", merchant)
         return

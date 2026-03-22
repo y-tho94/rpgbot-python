@@ -43,3 +43,12 @@ class AdminCog(commands.Cog):
         channel = self.bot.get_channel(self.generalChatID)
 
         await channel.send(f"The gods have given {target.mention} {amount} Gold")
+
+    @commands.command(hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def AdminGiveGoldAll(self, ctx, amount:int):
+        activePlayers = list(self.cache.cache.keys() - {"Wandering Merchant"})
+        for player in activePlayers:
+            await self.inventoryService.AdminGiveGold(player, amount)
+        channel = self.bot.get_channel(self.generalChatID)
+        await channel.send(f"The gods have given all players {amount} Gold")
