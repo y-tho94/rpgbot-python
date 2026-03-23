@@ -12,6 +12,10 @@ class CharacterCog(commands.Cog):
 
     @commands.command(brief="Delete exisiting character and create a new one")
     async def Create(self, ctx:commands.Context, *, characterName=""):
+        if len(characterName.strip()) == 0:
+            await ctx.reply("Enter a valid name for your character")
+            return
+
         characterName = characterName.replace("\"", "")
         player = ctx.author.name
         member = ctx.author
@@ -24,9 +28,6 @@ class CharacterCog(commands.Cog):
         except Exception as ex:
             print(ex)
 
-        if len(characterName.strip()) == 0:
-            await ctx.reply("Enter a valid name for your character")
-            return
         try:
             await self.characterService.CreateNewCharacter(characterName, player)
             cachedChar = self.cache.get(player)
@@ -46,4 +47,33 @@ class CharacterCog(commands.Cog):
         await self.characterService.GetSetChar(player)
         ch = await self.characterService.DescribeCharacter(player)
         await ctx.reply(json.dumps(ch, indent=4))
+        return
+
+    @commands.command(brief="Rename your character", aliases=["RenameCh"])
+    async def RenameCharacter(self, ctx:commands.Context, *, newName=""):
+        newName = newName.replace("\"", "")
+        player = ctx.author.name
+        member = ctx.author
+        
+        if len(newName.strip()) == 0:
+            await ctx.reply("Enter a valid name for your character")
+            return
+        try:
+            checkforname = ctx.guild.get_member_named(newName)
+            if checkforname is not None and checkforname.id != member.id:
+                await ctx.reply("That name is already taken by another player. Please choose a different name")
+                return
+            await member.edit(nick=newName)
+        except Exception as ex:
+            print(ex)
+
+        try:
+            ch = self.cache.get(player)
+            ch.Name = newName
+            await self.characterService.SaveCharacter(player)
+            await ctx.reply(f"Character renamed to {newName} successfully")
+        except Exception as ex:
+            print(ex)
+            await ctx.reply("There was an error renaming your character :(")
+        
         return

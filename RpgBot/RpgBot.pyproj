@@ -42,6 +42,7 @@
     <Compile Include="services\inventoryService.py" />
     <Compile Include="services\lootService.py" />
     <Compile Include="services\merchantService.py" />
+    <Compile Include="services\monsterservice.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="models\" />

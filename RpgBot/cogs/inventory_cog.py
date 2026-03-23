@@ -12,7 +12,7 @@ class InventoryCog(commands.Cog):
         self.cache = cache
         self.inventoryService = inventoryService
         self.characterService = characterService
-        self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
+        self.generalChatId = int(os.getenv("GENERAL_CHANNEL_ID"))
 
     @commands.command(brief="Show inventory", aliases=["ShowInv"])
     async def ShowInventory(self, ctx):
@@ -146,7 +146,7 @@ class InventoryCog(commands.Cog):
             if response is not None:
                 await ctx.reply(json.dumps(response, indent=4))
             else:
-                channel = self.bot.get_channel(self.genChannelId)
+                channel = self.bot.get_channel(self.generalChatId)
                 sender = self.bot.get_user(ctx.author.id)
                 await channel.send(f"{sender.mention} gave {target.mention} '{itemName}'")
         except Exception as ex:
@@ -175,7 +175,7 @@ class InventoryCog(commands.Cog):
             if response is not None:
                 await ctx.reply(json.dumps(response, indent=4))
             else:
-                channel = self.bot.get_channel(self.genChannelId)
+                channel = self.bot.get_channel(self.generalChatId)
                 sender = self.bot.get_user(ctx.author.id)
                 await channel.send(f"{sender.mention} gave {target.mention} {amount} Gold")
         except Exception as ex:

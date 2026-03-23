@@ -147,6 +147,11 @@ class Character:
             self.MaxAP += effects.MaxAP
             self.Evasion += effects.Evasion
             self.CritChance += effects.CritChance
+
+        if self.CurrentAP > self.MaxAP:
+            self.CurrentAP = self.MaxAP
+        if self.CurrentHP > self.MaxHP:
+            self.CurrentHP = self.MaxHP
             
         
     def calcStartingGold(self):
@@ -223,4 +228,5 @@ class Inventory():
                         dup.Name += f" ({dupCount})"
                         dupCount += 1
         
+        equipped.sort(key=lambda i: i.Type)
         return

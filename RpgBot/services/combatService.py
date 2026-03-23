@@ -99,15 +99,15 @@ class CombatService():
             summary.append(f"{ch.Name} lowered {targetCh.Name}'s {stat} by {debuffAmount}")
             match stat:
                 case "AttackRating":
-                    targetCh.AttackRating -= debuffAmount
+                    targetCh.AttackRating = 0 if targetCh.AttackRating - debuffAmount < 0 else targetCh.AttackRating - debuffAmount
                 case "DamageReduction":
-                    targetCh.DamageReduction -= debuffAmount
+                    targetCh.DamageReduction = 0 if targetCh.DamageReduction - debuffAmount < 0 else targetCh.DamageReduction - debuffAmount
                 case "SpellDamage":
-                    targetCh.SpellDamage -= debuffAmount
+                    targetCh.SpellDamage = 0 if targetCh.SpellDamage - debuffAmount < 0 else targetCh.SpellDamage - debuffAmount
                 case "Evasion":
-                    targetCh.Evasion -= debuffAmount
+                    targetCh.Evasion = 0 if targetCh.Evasion - debuffAmount < 0 else targetCh.Evasion - debuffAmount
                 case "CritChance":
-                    targetCh.CritChance -= debuffAmount
+                    targetCh.CritChance = 0 if targetCh.CritChance - debuffAmount < 0 else targetCh.CritChance - debuffAmount
         
         #self heal
         selfNewHP = ch.CurrentHP + selfHealAmount - selfInflictAmount
@@ -119,26 +119,29 @@ class CombatService():
         if selfInflictAmount > 0:
             summary.append(f"{ch.Name} hurt themself for {selfInflictAmount} {effectType} damage")
 
-        #heal target
+        #calc net damage
         critChance = random.randint(1,100)
         critStr = ""
         if ch.CritChance >= critChance:
             inflictAmount *= 2
             critStr = "critically "
+
+        evadeChance = random.randint(1,100)
+        if targetCh.Evasion >= evadeChance:
+            inflictAmount = 0
+            summary.append(f"{ch.Name} attacked {targetCh.Name} with {ability.Name}, but missed!")
+
         damageTaken = inflictAmount - targetCh.DamageReduction if inflictAmount - targetCh.DamageReduction > 0 else 0
 
+        #apply heal and damage to target
         newHP = targetCh.CurrentHP + healAmount - damageTaken
         targetCh.CurrentHP =  newHP if newHP <= targetCh.MaxHP else targetCh.MaxHP
         if healAmount > 0:
             summary.append(f"{ch.Name} healed {targetCh.Name} for {healAmount} HP")
 
         #damage target
-        if inflictAmount > 0:
-            evadeChance = random.randint(1,100)
-            if targetCh.Evasion >= evadeChance:
-                summary.append(f"{ch.Name} attacked {targetCh.Name} with {ability.Name}, but missed!")
-            else:
-                summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {targetCh.Name}")
+        if damageTaken > 0:
+            summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {targetCh.Name}")
 
         #target retaliates
         if inflictAmount > 0 or len(ability.Effects.Debuff) > 0:

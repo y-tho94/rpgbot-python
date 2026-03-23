@@ -5,7 +5,7 @@ Base = declarative_base()
 
 class Context:
     def __init__(self):
-        self.engine = create_engine("sqlite:///rpgbot.db")
+        self.engine = create_engine("sqlite:///rpgbotDEV.db")
         self._base = Base
         self._base.metadata.create_all(self.engine)
         print("Tables created")

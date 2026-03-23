@@ -96,7 +96,7 @@ class MerchantService():
             }
 
         ch.Inventory.Gold -= itemVal
-        merchant.Inventory.Wares = [item for item in merchant.Inventory.Wares if item.Item.Name != itemName]
+        merchant.Inventory.Wares.remove(itemToBuy[0])
         ch.Inventory.Stored.append(itemToBuy[0].Item)
 
         session = Session(bind = self.db)
@@ -126,7 +126,7 @@ class MerchantService():
                 "Error": "Item does not exist in player stored inventory"
             }
         
-        ch.Inventory.Stored = [item for item in ch.Inventory.Stored if item.Name != itemName]
+        ch.Inventory.Stored.remove(itemToSell[0])
         
         itemVal = self.AppraiseItem(itemToSell[0])
 

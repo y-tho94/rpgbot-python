@@ -76,6 +76,7 @@ class LootService():
         startingInv.append(await self.GenerateLootByType("Body"))
         startingInv.append(await self.GenerateLootByType("Legs"))
         startingInv.append(await self.GenerateLootByType("Hand"))
+        startingInv.append(await self.GenerateLootByType("Accessory"))
 
         return startingInv
 
@@ -92,5 +93,6 @@ class LootService():
         learnEffect = loot.Effects.Use[0]
         learnEffect = learnEffect.replace("***", abilityName)
         loot.Effects.Use[0] = learnEffect
+        loot.Name = f"{abilityName} Scroll"
         return loot
 
