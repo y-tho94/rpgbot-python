@@ -1,3 +1,4 @@
+import discord
 from discord.ext import tasks, commands
 from services.cacheService import SimpleCache
 from services.characterService import CharacterService
@@ -76,4 +77,28 @@ class CharacterCog(commands.Cog):
             print(ex)
             await ctx.reply("There was an error renaming your character :(")
         
+        return
+
+    @commands.command(brief="Level up a stat. ex: $LevelUp Strength")
+    async def LevelUp(self, ctx, stat:str):
+        player = ctx.author.name
+        await self.characterService.GetSetChar(player)
+
+        response = await self.characterService.LevelUpChar(player, stat)
+        await ctx.reply(json.dumps(response, indent=4))
+        return
+
+    @commands.command(hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def AdminDescribeCharacter(self, ctx, *, player:discord.Member):
+        removeFromCache = False
+        ch = self.cache.get(player.name)
+        if ch is None:
+            removeFromCache = True
+            await self.characterService.GetSetChar(player.name)
+
+        response = await self.characterService.DescribeCharacter(player.name)
+        await ctx.reply(json.dumps(response, indent=4))
+        if removeFromCache:
+            self.cache.delete(player.name)
         return

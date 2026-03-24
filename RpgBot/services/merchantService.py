@@ -98,6 +98,7 @@ class MerchantService():
         ch.Inventory.Gold -= itemVal
         merchant.Inventory.Wares.remove(itemToBuy[0])
         ch.Inventory.Stored.append(itemToBuy[0].Item)
+        ch.Inventory.checkInventoryForDuplicates()
 
         session = Session(bind = self.db)
         chTable = ch.ToCharacterTable(playerName)

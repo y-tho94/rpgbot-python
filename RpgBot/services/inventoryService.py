@@ -21,6 +21,7 @@ class InventoryService():
 
         return {
             "Gold": inv.Gold,
+            "XP": inv.XP,
             "Equipped": [item.Name for item in inv.Equipped],
             "Stored": [item.Name for item in inv.Stored]
         }

@@ -2,17 +2,21 @@ import discord
 from discord.ext import tasks, commands
 from services.cacheService import SimpleCache
 from services.characterService import CharacterService
+from services.monsterservice import MonsterService
 import os
+
 class TasksCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, characterService:CharacterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, characterService:CharacterService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.characterService = characterService
-
+        self.monsterService = monsterService
         self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
+        self.dungeonChatID = int(os.getenv("DUNGEON_CHANNEL_ID"))
 
         self.ClearCache.start()
         self.ClearMerchant.start()
+        self.SummonMobMonster.start()
     
     def cog_unload(self):
         self.ClearCache.cancel()
@@ -44,4 +48,12 @@ class TasksCog(commands.Cog):
         channel = self.bot.get_channel(self.generalChatID)
         allowed_mentions = discord.AllowedMentions(everyone = True)
         await channel.send("@everyone The merchant has new inventory", allowed_mentions=allowed_mentions)
+        return
+
+    @tasks.loop(minutes=15)
+    async def SummonMobMonster(self):
+        monster = await self.monsterService.GetMobMonster()
+
+        channel = self.bot.get_channel(self.dungeonChatID)
+        await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
         return

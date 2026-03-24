@@ -25,6 +25,7 @@
     <Compile Include="cogs\admin_cog.py" />
     <Compile Include="cogs\character_cog.py" />
     <Compile Include="cogs\combat_cog.py" />
+    <Compile Include="cogs\dungeon_cog.py" />
     <Compile Include="cogs\inventory_cog.py" />
     <Compile Include="cogs\merchant_cog.py" />
     <Compile Include="cogs\tasks.py" />

@@ -114,6 +114,9 @@ class CharacterService():
 
         return {
             "Character Name": character.Name,
+            "Level": character.Level,
+            "XP": character.Inventory.XP,
+            "Next Level": character.NextXPtoLevel,
             "Gold": character.Inventory.Gold,
             "HP": character.CurrentHP,
             "AP": character.CurrentAP,
@@ -147,6 +150,48 @@ class CharacterService():
         return {
             "Error" : "",
             "Character": cachedChar
+        }
+
+    async def LevelUpChar(self, player:str, stat:str):
+        ch = self.cache.get(player)
+        if ch is None:
+            return {
+                "Error": f"Character for {player} does not exist"
+            }
+        if ch.Inventory.XP < ch.NextXPtoLevel:
+            return {
+                "Error": f"Not enough XP to level up. {ch.NextXPtoLevel - ch.Inventory.XP} more XP needed"
+            }
+
+        stat = stat.lower()
+        match stat:
+            case "strength":
+                ch.Strength += 1
+            case "dexterity":
+                ch.Dexterity += 1
+            case "endurance":
+                ch.Endurance += 1
+            case "intelligence":
+                ch.Intelligence += 1
+            case "faith":
+                ch.Faith += 1
+            case "luck":
+                ch.Luck += 1
+            case _:
+                return {
+                    "Error": f"{stat} is not a valid stat to level up"
+                }
+        
+        
+        ch.Inventory.XP -= ch.NextXPtoLevel
+
+        ch.deriveStats()
+        ch.calcMaxHPandAP()
+
+        self.cache.set(player, ch)
+        await self.SaveCharacter(player, ch)
+        return {
+            "Summary": f"{ch.Name} has leveled up {stat.upper()}"     
         }
 
     async def KillCharacter(self, player:str):

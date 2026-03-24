@@ -1,5 +1,6 @@
 import random
 import time
+import math
 from data.dataContext import CharacterTable
 from models.ability import Ability
 from models.loot import Loot
@@ -17,6 +18,8 @@ class Character:
         self.Luck = 0
 
         #derived stats
+        self.Level = 0
+        self.NextXPtoLevel = 0
         self.AttackRating = 0
         self.DamageReduction = 0
         self.SpellDamage = 0
@@ -48,6 +51,8 @@ class Character:
     def to_dict(self):
         return {
             "Name": self.Name,
+            "Level": self.Level,
+            "NextXPtoLevel": self.NextXPtoLevel,
             "Strength": self.Strength,
             "Dexterity": self.Dexterity,
             "Endurance": self.Endurance,
@@ -67,6 +72,7 @@ class Character:
             "CurrentAP": self.CurrentAP,
             "Inventory": {
                 "Gold": self.Inventory.Gold,
+                "XP": self.Inventory.XP, 
                 "Equipped":[item.to_dict() for item in self.Inventory.Equipped],
                 "Stored": [item.to_dict() for item in self.Inventory.Stored],
                 "Ability": [item.to_dict() for item in self.Inventory.Ability],
@@ -83,6 +89,7 @@ class Character:
         self.Luck = chTable.luck
         inv = Inventory()
         inv.Gold = chTable.inventory["Gold"]
+        inv.XP = chTable.inventory["XP"]
         inv.Equipped = [Loot(**item) for item in chTable.inventory["Equipped"]]
         inv.Stored = [Loot(**item) for item in chTable.inventory["Stored"]]
         inv.Ability = [Ability(**item) for item in chTable.inventory["Ability"]]
@@ -103,6 +110,7 @@ class Character:
             luck = self.Luck,
             inventory = {
                 "Gold": self.Inventory.Gold,
+                "XP": self.Inventory.XP, 
                 "Equipped":[item.to_dict() for item in self.Inventory.Equipped],
                 "Stored": [item.to_dict() for item in self.Inventory.Stored],
                 "Ability": [item.to_dict() for item in self.Inventory.Ability],
@@ -127,6 +135,8 @@ class Character:
         fthMod = (self.Faith - 10) // 2
         luckMod = (self.Luck - 10) // 2
 
+        self.Level = self.Strength + self.Dexterity + self.Endurance + self.Intelligence + self.Faith + self.Luck 
+        self.NextXPtoLevel = self.calcXpToLevel()
         self.AttackRating = strMod if strMod > dexMod else dexMod
         self.MaxHP = 10 + endMod
         self.MaxAP = 10 + intMod
@@ -162,13 +172,15 @@ class Character:
         self.CurrentHP = self.MaxHP
         self.CurrentAP = self.MaxAP
         
-    
+    def calcXpToLevel(self):
+        return int(math.pow(self.Level - 1, 1.5) // 1)
 #end class def
 
 
 class Inventory():
     def __init__(self):
         self.Gold = 0
+        self.XP = 0
         self.Equipped = [] #list of loot
         self.Stored = [] #list of loot
         self.Ability = [] #list of abilities
@@ -176,6 +188,7 @@ class Inventory():
     def to_dict(self):
         return {
             "Gold": self.Gold,
+            "XP": self.XP,
             "Equipped":[item.to_dict() for item in self.Equipped],
             "Stored": [item.to_dict() for item in self.Stored],
             "Ability": [item.to_dict() for item in self.Ability],
