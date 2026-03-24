@@ -118,15 +118,17 @@ class CharacterService():
             "XP": character.Inventory.XP,
             "Next Level": character.NextXPtoLevel,
             "Gold": character.Inventory.Gold,
-            "HP": character.CurrentHP,
-            "AP": character.CurrentAP,
+            "HP": f"{character.MaxHP} / {character.CurrentHP}",
+            "AP": f"{character.MaxAP} / {character.CurrentAP}",
             "Max Inventory": character.MaxInventory,
-            "Strength": character.Strength,
-            "Dexterity": character.Dexterity,
-            "Endurance": character.Endurance,
-            "Intelligence": character.Intelligence,
-            "Faith": character.Faith,
-            "Luck": character.Luck,
+            "Attributes": {
+                "Strength": character.Strength,
+                "Dexterity": character.Dexterity,
+                "Endurance": character.Endurance,
+                "Intelligence": character.Intelligence,
+                "Faith": character.Faith,
+                "Luck": character.Luck,
+            },
             "Attack Rating": character.AttackRating,
             "Spell Damage": character.SpellDamage,
             "Damage Reduction": character.DamageReduction,
@@ -179,7 +181,7 @@ class CharacterService():
                 ch.Luck += 1
             case _:
                 return {
-                    "Error": f"{stat} is not a valid stat to level up"
+                    "Error": f"{stat} is not a valid attribute to level up"
                 }
         
         

@@ -79,7 +79,7 @@ class CharacterCog(commands.Cog):
         
         return
 
-    @commands.command(brief="Level up a stat. ex: $LevelUp Strength")
+    @commands.command(brief="Level up an attribute. ex: $LevelUp Strength")
     async def LevelUp(self, ctx, stat:str):
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
