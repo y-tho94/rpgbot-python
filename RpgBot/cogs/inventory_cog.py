@@ -1,18 +1,22 @@
 import discord
 from discord.ext import tasks, commands
 from services.cacheService import SimpleCache
+from services.monsterservice import MonsterService
 from services.characterService import CharacterService
 from services.inventoryService import InventoryService
 import json
 import os
 
 class InventoryCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, inventoryService:InventoryService, characterService:CharacterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, inventoryService:InventoryService, characterService:CharacterService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.inventoryService = inventoryService
         self.characterService = characterService
+        self.monsterCache = monsterCache
+        self.monsterService = monsterService
         self.generalChatId = int(os.getenv("GENERAL_CHANNEL_ID"))
+        self.dungeonChatId = int(os.getenv("DUNGEON_CHANNEL_ID"))
 
     @commands.command(brief="Show inventory", aliases=["ShowInv"])
     async def ShowInventory(self, ctx):
@@ -209,7 +213,7 @@ class InventoryCog(commands.Cog):
         return
 
     @commands.command(brief="Use an item in stored inventory on target or self")
-    async def Use(self, ctx, itemName="", target:discord.Member="self"):
+    async def Use(self, ctx, itemName="", target:str="self"):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item name given")
             return
@@ -218,8 +222,17 @@ class InventoryCog(commands.Cog):
         await self.characterService.GetSetChar(player)
         if target == "self":
             target = ctx.author
-        await self.characterService.GetSetChar(target.name)
+            response = await self.inventoryService.UseItem(player, target.name, itemName)
+            await ctx.reply(json.dumps(response, indent=4))
+        elif ctx.channel.id != self.dungeonChatId:
+            await self.characterService.GetSetChar(target.name)
+            response = await self.inventoryService.UseItem(player, target.name, itemName)
+            await ctx.reply(json.dumps(response, indent=4))
+        else:
+            monster = self.monsterCache.get(target)
+            if monster is not None:
+                response = await self.monsterService.UseItem(player, target, itemName)
+                await ctx.reply(json.dumps(response, indent=4))
 
-        response = await self.inventoryService.UseItem(player, target.name, itemName)
-        await ctx.reply(json.dumps(response, indent=4))
+        await self.inventoryService.DiscardItem(player, itemName)
         return

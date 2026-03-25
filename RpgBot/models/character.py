@@ -199,47 +199,32 @@ class Inventory():
         stored = self.Stored
         ability = self.Ability
 
-        for item in equipped:
-            #get list of all items with the same name
-            duplicates = list(filter(lambda i: i.Name == item.Name, equipped))
-
-            #if more than one item with the same name...
-            if len(duplicates) > 1:
-                #loop through inventory and rename the item
-                dupName = item.Name
-                dupCount = 0
-                for dup in equipped:
-                    if dup.Name == dupName:
-                        dup.Name += f" ({dupCount})"
-                        dupCount += 1
-        
-        for item in stored:
-            #get list of all items with the same name
-            duplicates = list(filter(lambda i: i.Name == item.Name, stored))
-
-            #if more than one item with the same name...
-            if len(duplicates) > 1:
-                #loop through inventory and rename the item
-                dupName = item.Name
-                dupCount = 0
-                for dup in stored:
-                    if dup.Name == dupName:
-                        dup.Name += f" ({dupCount})"
-                        dupCount += 1
-        
-        for item in ability:
-            #get list of all items with the same name
-            duplicates = list(filter(lambda i: i.Name == item.Name, ability))
-
-            #if more than one item with the same name...
-            if len(duplicates) > 1:
-                #loop through inventory and rename the item
-                dupName = item.Name
-                dupCount = 0
-                for dup in ability:
-                    if dup.Name == dupName:
-                        dup.Name += f" ({dupCount})"
-                        dupCount += 1
+        equipped = self.dedupe(equipped)
+        stored = self.dedupe(stored)
+        ability = self.dedupe(ability)
         
         equipped.sort(key=lambda i: i.Type)
+        stored.sort(key=lambda i: i.Name)
+        ability.sort(key=lambda i: i.Name)
         return
+
+    @staticmethod
+    def dedupe(items:list):
+        for item in items:
+            #don't rename potions
+            if item.Name.startswith("Potion"):
+                continue
+
+            #get list of all items with the same name
+            duplicates = list(filter(lambda i: i.Name == item.Name, items))
+            #if more than one item with the same name...
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in items:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
+        
+        return items

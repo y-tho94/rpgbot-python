@@ -2,6 +2,7 @@ from data.dataContext import Context, MonsterTable
 from models.ability import Ability
 from models.monster import Monster
 from models.character import Character
+from models.loot import Loot
 from services.cacheService import SimpleCache
 from services.characterService import CharacterService
 from services.lootService import LootService
@@ -22,7 +23,7 @@ class MonsterService:
     #get mob monster from db then save it to monster cache and return it
     async def GetMobMonster(self):
         monstersInDungeon = self.monsterCache.cache.keys()
-        if len(monstersInDungeon) == 10:
+        if len(monstersInDungeon) == 20:
             return None
 
         statement = select(MonsterTable).filter_by(type = "mob")
@@ -117,7 +118,7 @@ class MonsterService:
         for stat in ability.Effects.Boost:
             summary.append(f"{ch.Name} boosted {monster.Name}'s {stat} by {boostAmount}")
             match stat:
-                case "AttackRating":
+                case "AttackRating" | "SpellDamage":
                     monster.AttackRating += boostAmount
                 case "DamageReduction":
                     monster.DamageReduction += boostAmount
@@ -130,7 +131,7 @@ class MonsterService:
         for stat in ability.Effects.Debuff:
             summary.append(f"{ch.Name} lowered {monster.Name}'s {stat} by {debuffAmount}")
             match stat:
-                case "AttackRating":
+                case "AttackRating" | "SpellDamage":
                     monster.AttackRating = 0 if monster.AttackRating - debuffAmount < 0 else monster.AttackRating - debuffAmount
                 case "DamageReduction":
                     monster.DamageReduction = 0 if monster.DamageReduction - debuffAmount < 0 else monster.DamageReduction - debuffAmount
@@ -193,7 +194,7 @@ class MonsterService:
             self.cache.delete(player)
             monster.InteractingPlayers.remove(player)
             self.monsterCache.set(monster.Name, monster)
-            self.characterService.KillCharacter(player)
+            await self.characterService.KillCharacter(player)
         else:
             self.cache.set(player, ch)
         
@@ -270,8 +271,100 @@ class MonsterService:
             "Summary": summary      
         }
 
+    #use item on monster
+    async def UseItem(self, player:str, monster:Monster, itemName:str):
+        character = self.cache.get(player) or Character()
+        
+        itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
+        if len(itemToUse) == 0:
+            return {
+                "Error": "No item of that name in stored inventory"    
+            }
+
+        item = itemToUse[0] or Loot()
+        useEffects = item.Effects.Use
+
+        if len(useEffects) == 0:
+            return {
+                "Error": f"{itemName} has no on-use effects"    
+            }
+        
+        if player not in monster.InteractingPlayers:
+            monster.InteractingPlayers.append(player)
+
+        for e in useEffects:
+            tokens = e.split()
+            effect = tokens[0]
+
+            summary = []
+            match effect:
+                case "Heal":
+                    amount = int(tokens[1])
+                    newHP = monster.HP + amount
+                    monster.HP = newHP if newHP <= monster.MaxHP else monster.MaxHP
+                    summary.append(f"{character.Name} healed {monster.Name} for {amount} HP")
+                case "Inflict":
+                    amount = int(tokens[1])
+                    dmgType = tokens[2]
+
+                    if dmgType in monster.Weakness:
+                        amount *= 2
+                    if dmgType in monster.Resistance:
+                        amount = amount // 2
+
+                    newHP = monster.HP - amount
+                    monster.HP = newHP
+                    summary.append(f"{character.Name} inflicted {amount} {dmgType} damage to {monster.Name}")
+                case "Buff":
+                    stat = tokens[1]
+                    amount = int(tokens[2])
+
+                    summary.append(f"{character.Name} boosted {monster.Name}'s {stat} by {amount}")
+                    match stat:
+                        case "AttackRating" | "SpellDamage":
+                            monster.AttackRating += amount
+                        case "DamageReduction":
+                            monster.DamageReduction += amount
+                        case "SpellDamage":
+                            monster.SpellDamage += amount
+                        case "Evasion":
+                            monster.Evasion += amount
+                        case "CritChance":
+                            monster.CritChance += amount
+                case "Debuff":
+                    stat = tokens[1]
+                    amount = int(tokens[2])
+
+                    summary.append(f"{character.Name} boosted {monster.Name}'s {stat} by {amount}")
+                    match stat:
+                        case "AttackRating" | "SpellDamage":
+                            monster.AttackRating = 0 if monster.AttackRating - amount < 0 else monster.AttackRating - amount
+                        case "DamageReduction":
+                            monster.DamageReduction = 0 if monster.DamageReduction - amount < 0 else monster.DamageReduction - amount
+                        case "Evasion":
+                            monster.Evasion = 0 if monster.Evasion - amount < 0 else monster.Evasion - amount
+                        case "CritChance":
+                            monster.CritChance = 0 if monster.CritChance - amount < 0 else monster.CritChance - amount
+                case _:
+                    pass
+            
+
+            #check for monster death, responds if alive
+        if monster.HP <= 0:
+            for playerInCombat in monster.InteractingPlayers:
+                summary = await self.DropLoot(summary, playerInCombat, monster)
+            self.monsterCache.delete(monster.Name)
+        else:
+            summary = await self.MonsterAIAction(summary, character, monster)
+
+        return {
+            "Summary" : summary    
+        }
+
     async def DropLoot(self, summary:list, player:str, monster:Monster):
-        ch = self.cache.get(player) or Character()
+        ch = self.cache.get(player)
+        if ch is None:
+            return summary
         monsterLoot = monster.DropTable
 
         summary.append(f"{ch.Name} defeated {monster.Name} and received {monsterLoot.Gold} gold and {monsterLoot.XP} XP!")

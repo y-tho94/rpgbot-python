@@ -5,6 +5,8 @@ from services.characterService import CharacterService
 from services.inventoryService import InventoryService
 from services.merchantService import MerchantService
 import json
+import os
+
 class MerchantCog(commands.Cog):
     def __init__(self, bot:commands.Bot, cache:SimpleCache, merchantService:MerchantService, characterService:CharacterService, inventoryService:InventoryService):
         self.bot = bot
@@ -13,6 +15,7 @@ class MerchantCog(commands.Cog):
         self.characterService = characterService
         self.inventoryService = inventoryService
 
+        self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
         return
 
     @commands.command(breif="Show Merchant inventory", aliases=["Merchant"])
@@ -71,6 +74,8 @@ class MerchantCog(commands.Cog):
             return
 
         await ctx.reply(f"You bought {itemName} from the shop")
+        channel = self.bot.get_channel(self.generalChatID)
+        await channel.send(f"{ctx.author.mention} bought {itemName} from the shop")
 
     @commands.command(brief="Sell item to merchant from stored inventory")
     async def Sell(self, ctx, *, itemName:str):
@@ -87,4 +92,6 @@ class MerchantCog(commands.Cog):
             return
 
         await ctx.reply(f"You sold {itemName} to the shop")
+        channel = self.bot.get_channel(self.generalChatID)
+        await channel.send(f"{ctx.author.mention} sold {itemName} to the shop")
 

@@ -140,7 +140,7 @@ class CombatService():
             summary.append(f"{ch.Name} healed {targetCh.Name} for {healAmount} HP")
 
         #damage target
-        if damageTaken > 0:
+        if inflictAmount > 0:
             summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {targetCh.Name}")
 
         #target retaliates

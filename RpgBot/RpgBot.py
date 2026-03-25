@@ -49,13 +49,13 @@ if __name__ == '__main__':
     #Events
     @bot.event
     async def on_ready():
-        await bot.add_cog(AdminCog(bot, cache, characterService, abilityService, lootService, inventoryService, merchantService))
+        await bot.add_cog(AdminCog(bot, cache, monsterCache, characterService, abilityService, lootService, inventoryService, merchantService, monsterService))
         await bot.add_cog(TasksCog(bot, cache, characterService, monsterService))
         await bot.add_cog(MerchantCog(bot, cache, merchantService, characterService, inventoryService))
         await bot.add_cog(CharacterCog(bot, cache, characterService))
         await bot.add_cog(CombatCog(bot, cache, monsterCache, combatService, characterService, abilityService, monsterService))
         await bot.add_cog(AbilityCog(bot, cache, characterService, abilityService))
-        await bot.add_cog(InventoryCog(bot, cache, inventoryService, characterService))
+        await bot.add_cog(InventoryCog(bot, cache, monsterCache, inventoryService, characterService, monsterService))
         await bot.add_cog(DungeonCog(bot, monsterCache, monsterService))
         print("We're alive!")
         return 

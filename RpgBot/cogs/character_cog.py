@@ -71,7 +71,7 @@ class CharacterCog(commands.Cog):
         try:
             ch = self.cache.get(player)
             ch.Name = newName
-            await self.characterService.SaveCharacter(player)
+            await self.characterService.SaveCharacter(player, ch)
             await ctx.reply(f"Character renamed to {newName} successfully")
         except Exception as ex:
             print(ex)
@@ -86,19 +86,4 @@ class CharacterCog(commands.Cog):
 
         response = await self.characterService.LevelUpChar(player, stat)
         await ctx.reply(json.dumps(response, indent=4))
-        return
-
-    @commands.command(hidden=True)
-    @commands.has_permissions(administrator=True)
-    async def AdminDescribeCharacter(self, ctx, *, player:discord.Member):
-        removeFromCache = False
-        ch = self.cache.get(player.name)
-        if ch is None:
-            removeFromCache = True
-            await self.characterService.GetSetChar(player.name)
-
-        response = await self.characterService.DescribeCharacter(player.name)
-        await ctx.reply(json.dumps(response, indent=4))
-        if removeFromCache:
-            self.cache.delete(player.name)
         return

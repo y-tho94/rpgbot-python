@@ -52,8 +52,9 @@ class TasksCog(commands.Cog):
 
     @tasks.loop(minutes=15)
     async def SummonMobMonster(self):
-        monster = await self.monsterService.GetMobMonster()
-
         channel = self.bot.get_channel(self.dungeonChatID)
-        await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+        for _ in range(3):
+            monster = await self.monsterService.GetMobMonster()
+            if monster is not None:
+                await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
         return

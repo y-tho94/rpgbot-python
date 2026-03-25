@@ -325,8 +325,43 @@ class InventoryService():
                     ability = await self.abilityService.GenerateAbilityByName(abilityName)
                     if ability is not None:
                         summary.append(await self.abilityService.LearnAbility(target, ability))
+                case "Inflict":
+                    amount = int(tokens[1])
+                    dmgType = tokens[2]
+                    newHP = targetCh.CurrentHP - amount
+                    targetCh.CurrentHP = newHP if newHP >= 0 else 0
+                    summary.append(f"{character.Name} inflicted {amount} {dmgType} damage to {targetCh.Name}")
+                case "Buff":
+                    amount = int(tokens[2])
+                    stat = tokens[1]
+                    match stat:
+                        case "AttackRating":
+                            targetCh.AttackRating += amount
+                        case "DamageReduction":
+                            targetCh.DamageReduction += amount
+                        case "Evasion":
+                            targetCh.Evasion += amount
+                        case "SpellDamage":
+                            targetCh.SpellDamage += amount
+                        case "CritChance":
+                            targetCh.CritChance += amount
+                    summary.append(f"{character.Name} buffed {targetCh.Name}'s {stat} by {amount}")
+                case "Debuff":
+                    amount = int(tokens[2])
+                    stat = tokens[1]
+                    match stat:
+                        case "AttackRating":
+                            targetCh.AttackRating -= amount
+                        case "DamageReduction":
+                            targetCh.DamageReduction -= amount
+                        case "Evasion":
+                            targetCh.Evasion -= amount
+                        case "SpellDamage":
+                            targetCh.SpellDamage -= amount
+                        case "CritChance":
+                            targetCh.CritChance -= amount
+                    summary.append(f"{character.Name} debuffed {targetCh.Name}'s {stat} by {amount}")
 
-            await self.DiscardItem(player, itemName)
             self.cache.set(target, targetCh)
 
             return {

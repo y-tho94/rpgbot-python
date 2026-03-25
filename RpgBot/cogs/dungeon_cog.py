@@ -1,3 +1,4 @@
+from discord import channel
 from discord.ext import tasks, commands
 from services.cacheService import SimpleCache
 from services.monsterservice import MonsterService
@@ -22,13 +23,3 @@ class DungeonCog(commands.Cog):
 
         await ctx.reply("You look around the dungeon and see the following monsters...")
         await ctx.reply(json.dumps(monstersPresent, indent=4))
-
-    @commands.command(hidden=True)
-    @commands.has_permissions(administrator=True)
-    async def AdminSpawnMonster(self, ctx):
-        if ctx.channel.id != self.dungeonChatId:
-            return
-
-        monster = await self.monsterService.GetMobMonster()
-
-        await ctx.reply(f"{monster.Name} has been spawned in the dungeon")
