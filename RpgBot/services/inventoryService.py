@@ -340,31 +340,44 @@ class InventoryService():
                     amount = int(tokens[2])
                     match stat:
                         case "AttackRating":
-                            targetCh.AttackRating += amount
+                            targetCh.Buffs.AttackRating += amount
                         case "DamageReduction":
-                            targetCh.DamageReduction += amount
+                            targetCh.Buffs.DamageReduction += amount
                         case "Evasion":
-                            targetCh.Evasion += amount
+                            targetCh.Buffs.Evasion += amount
                         case "SpellDamage":
-                            targetCh.SpellDamage += amount
+                            targetCh.Buffs.SpellDamage += amount
                         case "CritChance":
-                            targetCh.CritChance += amount
+                            targetCh.Buffs.CritChance += amount
+                    targetCh.deriveStats()
                     summary.append(f"{character.Name} buffed {targetCh.Name}'s {stat} by {amount}")
                 case "Debuff":
                     stat = tokens[1]
                     amount = int(tokens[2])
                     match stat:
                         case "AttackRating":
-                            targetCh.AttackRating = 0 if targetCh.AttackRating - amount < 0 else targetCh.AttackRating - amount
+                            targetCh.Buffs.AttackRating -= amount
                         case "DamageReduction":
-                            targetCh.DamageReduction = 0 if targetCh.DamageReduction - amount < 0 else targetCh.DamageReduction - amount
+                            targetCh.Buffs.DamageReduction -= amount
                         case "Evasion":
-                            targetCh.Evasion = 0 if targetCh.Evasion - amount < 0 else targetCh.Evasion - amount
+                            targetCh.Buffs.Evasion -= amount
                         case "SpellDamage":
-                            targetCh.SpellDamage = 0 if targetCh.SpellDamage - amount < 0 else targetCh.SpellDamage - amount
+                            targetCh.Buffs.SpellDamage -= amount
                         case "CritChance":
-                            targetCh.CritChance = 0 if targetCh.CritChance - amount < 0 else targetCh.CritChance - amount
+                            targetCh.Buffs.CritChance -= amount
+                    targetCh.deriveStats()
                     summary.append(f"{character.Name} debuffed {targetCh.Name}'s {stat} by {amount}")
+                case "Cleanse":
+                    targetCh.Buffs.AttackRating = 0
+                    targetCh.Buffs.DamageReduction = 0
+                    targetCh.Buffs.Evasion = 0
+                    targetCh.Buffs.SpellDamage = 0
+                    targetCh.Buffs.CritChance = 0
+                    targetCh.Buffs.MaxHP = 0
+                    targetCh.Buffs.MaxAP = 0
+
+                    targetCh.deriveStats()
+                    summary.append(f"{character.Name} cleansed all buffs and debuffs from {targetCh.Name}")
                 case _:
                     summary.append(f"{effect} is not a valid effect")
             
