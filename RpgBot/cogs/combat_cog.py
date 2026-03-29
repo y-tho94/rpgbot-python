@@ -91,3 +91,17 @@ class CombatCog(commands.Cog):
             await ctx.reply(json.dumps(response, indent=4))
 
         return
+
+    @commands.command(brief="Flee from combat")
+    async def Disengage (self, ctx, *, monsterName:str):
+        channelId = ctx.channel.id
+        if channelId != self.dungeonChatId:
+            await ctx.reply("This command is only valid in the dungeon")
+            return
+
+        if channelId == self.dungeonChatId:
+            monster = self.monsterCache.get(monsterName)
+
+            response = await self.monsterService.FleeCombat(ctx.author.name, monster)
+            await ctx.reply(json.dumps(response, indent=4))
+            return

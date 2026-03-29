@@ -15,15 +15,18 @@ class MerchantService():
 
     async def GetSetMerchant(self):
         merchant = self.cache.get("Wandering Merchant")
-
         if merchant is None:
             await self.CreateMerchant()
+
+        scrollMerchant = self.cache.get("Scroll Merchant")
+        if scrollMerchant is None:
+            await self.CreateScrollMerchant()
 
         return
 
     async def CreateMerchant(self):
         merchant = Merchant()
-        for i in range(9):
+        for _ in range(3):
             item = await self.lootService.GenerateLoot()
             ware = Wares()
             ware.Item = item
@@ -31,29 +34,54 @@ class MerchantService():
 
             merchant.Inventory.Wares.append(ware)
             continue
-        scroll = await self.lootService.GenerateLootByName("Skill Scroll")
 
-        scrollWare = Wares()
-        scrollWare.Item = scroll
-        scrollWare.Value = self.AppraiseItem(scroll)
-        merchant.Inventory.Wares.append(scrollWare)
+        for _ in range(4):
+            item = await self.lootService.GenerateLootByType("Consumable")
+            ware = Wares()
+            ware.Item = item
+            ware.Value = self.AppraiseItem(item)
 
+            merchant.Inventory.Wares.append(ware)
+            continue
+
+        for _ in range(3):
+            special = await self.lootService.GenerateSpecialLoot()
+            specialWare = Wares()
+            specialWare.Item = special
+            specialWare.Value = self.AppraiseItem(special)
+            merchant.Inventory.Wares.append(specialWare)
+        
         merchant.Inventory.checkInventoryForDuplicates()
         self.cache.set("Wandering Merchant", merchant)
         return
 
-    async def ShowMerchantInventory(self):
-        merchant = self.cache.get("Wandering Merchant")
+    async def CreateScrollMerchant(self):
+        merchant = Merchant()
+        for _ in range(10):
+            scroll = await self.lootService.GenerateLootByName("Skill Scroll")
+            ware = Wares()
+            ware.Item = scroll
+            ware.Value = self.AppraiseItem(scroll)
+            merchant.Inventory.Wares.append(ware)
+            continue
+        
+        merchant.Inventory.checkInventoryForDuplicates()
+        self.cache.set("Scroll Merchant", merchant)
+        return
+
+    async def ShowMerchantInventory(self, merchantName:str):
+        merchant = self.cache.get(merchantName)
+        if merchant is None:
+            return {
+                "Error": f"No merchant named {merchantName} found"    
+            }
 
         wares = merchant.Inventory.Wares
 
         retval = []
         for w in wares:
-            dictItem = {
-                "Item": w.Item.Name,
-                "Value": w.Value
-            }
-            retval.append(dictItem)
+            item = f"{w.Item.Name} | {w.Value}G"
+            retval.append(item)
             continue
 
         return retval
@@ -67,19 +95,27 @@ class MerchantService():
             value += val if val > 0 else (val * -1)
             continue
 
+        nonMagicalTypes = ["Slash", "Pierce", "Bludgeon", "Heavy", "Light"]
+        if item.Effects.Type not in nonMagicalTypes:
+            value *= 5
+            pass
+
         value += len(item.Effects.Use) * 10
 
         return (value * 10 if value > 1 else 1)
 
-    async def BuyItem(self, playerName:str, itemName:str):
+    async def BuyItem(self, playerName:str, itemName:str, merchantName:str):
         ch = self.cache.get(playerName)
-        merchant = self.cache.get("Wandering Merchant")
+        merchant = self.cache.get(merchantName)
+        if merchant is None:
+            return {
+                "Error": f"No merchant named {merchantName} found"    
+            }
 
         if len(ch.Inventory.Stored) == ch.MaxInventory:
             return {
                 "Error": "No room in stored inventory"
             }
-
 
         itemToBuy = list(filter(lambda i: i.Item.Name == itemName, merchant.Inventory.Wares))
         if len(itemToBuy) == 0:
@@ -111,12 +147,11 @@ class MerchantService():
         self.cache.set(playerName, ch)
         return
 
-
     async def SellItem(self, playerName:str, itemName:str):
         ch = self.cache.get(playerName)
         merchant = self.cache.get("Wandering Merchant")
 
-        if len(merchant.Inventory.Wares) == 20:
+        if len(merchant.Inventory.Wares) >= 20:
             return {
                 "Error": "No more room in merchant inventory"
             }

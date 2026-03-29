@@ -229,13 +229,18 @@ class InventoryService():
         ch = self.cache.get(player)
         target = self.cache.get(targetPlayer)
 
+        if len(target.Inventory.Stored) + 1 == target.MaxInventory:
+            return {
+                "Error": "No room in target's stored inventory"
+            }
+
         itemToGive = list(filter(lambda i: i.Name == itemName, ch.Inventory.Stored))
         if len(itemToGive) == 0:
             return {
                 "Error": "No item of that name in inventory"    
             }
 
-        ch.Inventory.Stored = [item for item in ch.Inventory.Stored if item.Name != itemName]
+        ch.Inventory.Stored.remove(itemToGive[0])
         target.Inventory.Stored.append(itemToGive[0])
         target.Inventory.checkInventoryForDuplicates()
 
@@ -292,7 +297,7 @@ class InventoryService():
         itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
         if len(itemToUse) == 0:
             return {
-                "Error": "No item of that name in stored inventory"    
+                "Error": f"No item '{itemName}' in stored inventory"    
             }
 
         item = itemToUse[0] or Loot()
@@ -302,13 +307,12 @@ class InventoryService():
             return {
                 "Error": f"{itemName} has no on-use effects"    
             }
-
+        
+        summary = []
         for e in useEffects:
             tokens = e.split()
             effect = tokens[0]
-            eType = None if len(tokens) < 3 else tokens[2]
 
-            summary = []
             match effect:
                 case "Heal":
                     amount = int(tokens[1])
@@ -332,8 +336,8 @@ class InventoryService():
                     targetCh.CurrentHP = newHP if newHP >= 0 else 0
                     summary.append(f"{character.Name} inflicted {amount} {dmgType} damage to {targetCh.Name}")
                 case "Buff":
-                    amount = int(tokens[2])
                     stat = tokens[1]
+                    amount = int(tokens[2])
                     match stat:
                         case "AttackRating":
                             targetCh.AttackRating += amount
@@ -347,23 +351,24 @@ class InventoryService():
                             targetCh.CritChance += amount
                     summary.append(f"{character.Name} buffed {targetCh.Name}'s {stat} by {amount}")
                 case "Debuff":
-                    amount = int(tokens[2])
                     stat = tokens[1]
+                    amount = int(tokens[2])
                     match stat:
                         case "AttackRating":
-                            targetCh.AttackRating -= amount
+                            targetCh.AttackRating = 0 if targetCh.AttackRating - amount < 0 else targetCh.AttackRating - amount
                         case "DamageReduction":
-                            targetCh.DamageReduction -= amount
+                            targetCh.DamageReduction = 0 if targetCh.DamageReduction - amount < 0 else targetCh.DamageReduction - amount
                         case "Evasion":
-                            targetCh.Evasion -= amount
+                            targetCh.Evasion = 0 if targetCh.Evasion - amount < 0 else targetCh.Evasion - amount
                         case "SpellDamage":
-                            targetCh.SpellDamage -= amount
+                            targetCh.SpellDamage = 0 if targetCh.SpellDamage - amount < 0 else targetCh.SpellDamage - amount
                         case "CritChance":
-                            targetCh.CritChance -= amount
+                            targetCh.CritChance = 0 if targetCh.CritChance - amount < 0 else targetCh.CritChance - amount
                     summary.append(f"{character.Name} debuffed {targetCh.Name}'s {stat} by {amount}")
-
-            self.cache.set(target, targetCh)
-
-            return {
-                "Summary" : summary    
-            }
+                case _:
+                    summary.append(f"{effect} is not a valid effect")
+            
+        self.cache.set(target, targetCh)
+        return {
+            "Summary" : summary    
+        }

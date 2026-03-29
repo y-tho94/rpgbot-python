@@ -85,7 +85,7 @@ class CharacterService():
         return
 
     async def SaveCharacters(self):
-        allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant"})
+        allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant"})
 
         for player in allActivePlayers:
             ch = self.cache.get(player) or Character()
@@ -112,6 +112,9 @@ class CharacterService():
     async def DescribeCharacter(self, player:str):
         character = self.cache.get(player)
 
+        if character is None:
+            return {}
+
         return {
             "Character Name": character.Name,
             "Level": character.Level,
@@ -120,7 +123,8 @@ class CharacterService():
             "Gold": character.Inventory.Gold,
             "HP": f"{character.MaxHP} / {character.CurrentHP}",
             "AP": f"{character.MaxAP} / {character.CurrentAP}",
-            "Max Inventory": character.MaxInventory,
+            "Inventory": f"{character.MaxInventory} / {len(character.Inventory.Stored)}",
+            "Abilities": f"{character.MaxAbilities} / {len(character.Inventory.Ability)}",
             "Attributes": {
                 "Strength": character.Strength,
                 "Dexterity": character.Dexterity,

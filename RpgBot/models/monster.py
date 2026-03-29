@@ -75,11 +75,12 @@ class Monster():
         return stat + rand
 
 class DropTable():
-    def __init__(self, Gold:int=0, XP:int=0, Loot:list=[], SpecialLoot:list=[]):
+    def __init__(self, Gold:int=0, XP:int=0, Loot:list=[], SpecialLoot:list=[], RaidLoot:list=[]):
         self.Gold = Gold
         self.XP = XP
         self.Loot = Loot
         self.SpecialLoot = SpecialLoot
+        self.RaidLoot = RaidLoot
 
 class MonsterAI():
     def __init__(self, Actions:list = []):

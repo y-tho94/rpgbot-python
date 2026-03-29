@@ -6,9 +6,11 @@ from services.monsterservice import MonsterService
 import os
 
 class TasksCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, characterService:CharacterService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, systemCache:SimpleCache, characterService:CharacterService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
+        self.monsterCache = monsterCache
+        self.systemCache = systemCache
         self.characterService = characterService
         self.monsterService = monsterService
         self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
@@ -17,13 +19,14 @@ class TasksCog(commands.Cog):
         self.ClearCache.start()
         self.ClearMerchant.start()
         self.SummonMobMonster.start()
+        self.SummonRaidMonster.start()
     
     def cog_unload(self):
         self.ClearCache.cancel()
 
     @tasks.loop(hours=8)
     async def ClearCache(self):
-        activePlayers = list(self.cache.cache.keys() - {"Wandering Merchant"})
+        activePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant"})
 
         for player in activePlayers:
             ch = self.cache.get(player)
@@ -31,6 +34,8 @@ class TasksCog(commands.Cog):
 
         await self.characterService.SaveCharacters()
         self.cache.clear()
+        self.monsterCache.clear()
+        self.systemCache.clear()
 
         channel = self.bot.get_channel(self.generalChatID)
         await channel.send("After a long rest, all characters have been restored to full and all temporary effects have been removed")
@@ -42,19 +47,50 @@ class TasksCog(commands.Cog):
     async def ClearMerchant(self):
         try:
             self.cache.delete("Wandering Merchant")
+            self.cache.delete("Scroll Merchant")
         except:
             pass
 
         channel = self.bot.get_channel(self.generalChatID)
         allowed_mentions = discord.AllowedMentions(everyone = True)
-        await channel.send("@everyone The merchant has new inventory", allowed_mentions=allowed_mentions)
+        await channel.send("@everyone The merchants have new inventory", allowed_mentions=allowed_mentions)
         return
 
     @tasks.loop(minutes=15)
     async def SummonMobMonster(self):
         channel = self.bot.get_channel(self.dungeonChatID)
-        for _ in range(3):
-            monster = await self.monsterService.GetMobMonster()
+        for _ in range(10):
+            try:
+                monster = await self.monsterService.GetMobMonster(1)
+                if monster is not None:
+                    await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+            except Exception as e:
+                await channel.send(e)
+                break;
+        for _ in range(10):
+            try:
+                monster = await self.monsterService.GetMobMonster(2)
+                if monster is not None:
+                    await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+            except Exception as e:
+                await channel.send(e)
+                break;
+        return
+
+    @tasks.loop(hours=1)
+    async def SummonRaidMonster(self):
+        channel = self.bot.get_channel(self.dungeonChatID)
+        try:
+            monster = await self.monsterService.GetRaidMonster(1)
             if monster is not None:
-                await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+                await channel.send(f"A raid monster {monster.Name} has appeared in the dungeon!")
+        except Exception as e:
+            await channel.send(e)
+
+        try:
+            monster = await self.monsterService.GetRaidMonster(2)
+            if monster is not None:
+                await channel.send(f"A raid monster {monster.Name} has appeared in the dungeon!")
+        except Exception as e:
+            await channel.send(e)
         return

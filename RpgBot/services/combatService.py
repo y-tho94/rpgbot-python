@@ -1,4 +1,3 @@
-from calendar import c
 from models.ability import Ability
 from models.character import Character
 from services.cacheService import SimpleCache
@@ -38,8 +37,8 @@ class CombatService():
         }
 
     async def UseAbilityPvP(self, player:str, target:str, abilityName):
-        ch = self.cache.get(player) or Character()
-        targetCh = self.cache.get(target) or Character()
+        ch = self.cache.get(player)
+        targetCh = self.cache.get(target)
 
         abilityToUse = list(filter(lambda a: a.Name == abilityName, ch.Inventory.Ability))
         if len(abilityToUse) == 0:
@@ -61,16 +60,34 @@ class CombatService():
         #apply effects
         summary = [f"{ch.Name} used {ability.Name}"]
 
+        modstat = 0
         abilityType = ability.Type
+        match abilityType:
+            case "Skill":
+                modstat = ch.AttackRating
+            case "Spell":
+                modstat = ch.SpellDamage
+            case _:
+                pass
+
         effectType = ability.Effects.Type
-
         modifier = 0
-
         match effectType:
             case "Holy":
-                modifier += ((ch.Faith - 10) // 2)  + ch.SpellDamage
+                modifier += ((ch.Faith - 10) // 2)  + modstat
+            case "Slash":
+                dexMod = ((ch.Dexterity - 10) // 2)
+                strMod = ((ch.Strength - 10) // 2)
+                mod = strMod if strMod > dexMod else dexMod
+                modifier = mod + modstat
+            case "Pierce":
+                dexMod = ((ch.Dexterity - 10) // 2)
+                modifier = dexMod + modstat
+            case "Bludgeon":
+                strMod = ((ch.Strength - 10) // 2)
+                modifier = strMod + modstat
             case _:
-                modifier += ((ch.Intelligence - 10) // 2)  + ch.SpellDamage
+                modifier += ((ch.Intelligence - 10) // 2)  + modstat
 
         healAmount = 0 if ability.Effects.Heal == 0 else ability.Effects.Heal + modifier
         selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
@@ -127,7 +144,7 @@ class CombatService():
             critStr = "critically "
 
         evadeChance = random.randint(1,100)
-        if targetCh.Evasion >= evadeChance:
+        if targetCh.Evasion >= evadeChance and inflictAmount > 0 and evadeChance < 90:
             inflictAmount = 0
             summary.append(f"{ch.Name} attacked {targetCh.Name} with {ability.Name}, but missed!")
 
@@ -144,7 +161,7 @@ class CombatService():
             summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {targetCh.Name}")
 
         #target retaliates
-        if inflictAmount > 0 or len(ability.Effects.Debuff) > 0:
+        if (targetCh != ch) and (inflictAmount > 0 or len(ability.Effects.Debuff) > 0):
             summary.append(self._combatMath(targetCh, ch))
         #save character states
         self.cache.set(player, ch)
@@ -164,7 +181,7 @@ class CombatService():
 
     def _combatMath(self, ch:Character, target:Character):
         evadeChance = random.randint(1,100)
-        if target.Evasion >= evadeChance:
+        if target.Evasion >= evadeChance and evadeChance < 90:
             return f"{ch.Name} attacked {target.Name}, but missed!"
         else:
             attackSummary = f"{ch.Name} attacked {target.Name} "
@@ -185,7 +202,12 @@ class CombatService():
                 damageType = weapon[0].Effects.Type
 
             attackSummary += f"for {damageReal} {damageType} damage"
-            
+
+            if weapon[0].Effects.Heal > 0:
+                healAmount = weapon[0].Effects.Heal + (ch.AttackRating // 2)
+                ch.CurrentHP += healAmount if ch.CurrentHP + healAmount <= ch.MaxHP else ch.MaxHP
+                attackSummary += f" and healed {ch.Name} for {healAmount} HP"
+
             return attackSummary
         return
 

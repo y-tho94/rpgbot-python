@@ -33,6 +33,24 @@ class LootTable(Base):
     baseVariance = Column(Integer, nullable=False)
     baseEffects = Column(JSON, nullable=False)
 
+class SpecialLootTable(Base):
+    __tablename__ = "specialLoot"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    baseVariance = Column(Integer, nullable=False)
+    baseEffects = Column(JSON, nullable=False)
+
+class RaidLootTable(Base):
+    __tablename__ = "raidLoot"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    baseVariance = Column(Integer, nullable=False)
+    baseEffects = Column(JSON, nullable=False)
+
 class AbilityTable(Base):
     __tablename__ = "ability"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -46,6 +64,7 @@ class AbilityTable(Base):
 class MonsterTable(Base):
     __tablename__ = "monster"
     id = Column(Integer, primary_key=True, autoincrement=True)
+    floor = Column(Integer, nullable=True)
     type = Column(String, nullable=False)
     name = Column(String, nullable=False)
     weakness = Column(JSON, nullable=False)

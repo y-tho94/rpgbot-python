@@ -2,7 +2,7 @@ from cogs.ability_cog import AbilityCog
 from cogs.admin_cog import AdminCog
 from cogs.character_cog import CharacterCog
 from cogs.combat_cog import CombatCog
-from cogs.dungeon_cog import DungeonCog
+from cogs.dungeon_cog import DungeonCog, DungeonService
 from cogs.inventory_cog import InventoryCog
 from cogs.merchant_cog import MerchantCog
 from cogs.tasks import TasksCog
@@ -30,13 +30,15 @@ if __name__ == '__main__':
     db = Context()
     cache = SimpleCache()
     monsterCache = SimpleCache()
-    lootService = LootService(db=db)
+    systemCache = SimpleCache()
+    lootService = LootService(db=db, systemCache=systemCache)
     characterService = CharacterService(db=db, cache=cache, lootService=lootService)
-    abilityService = AbilityService(db=db, cache=cache)
+    abilityService = AbilityService(db=db, cache=cache, systemCache=systemCache)
     inventoryService = InventoryService(db=db, cache=cache, abilityService=abilityService)
     merchantService = MerchantService(db=db, cache=cache, lootService=lootService)
     combatService = CombatService(cache=cache, characterService=characterService)
-    monsterService = MonsterService(db=db, cache=cache, monsterCache=monsterCache, characterService=characterService, lootService=lootService)
+    monsterService = MonsterService(db=db, cache=cache, monsterCache=monsterCache, systemCache=systemCache, characterService=characterService, lootService=lootService)
+    dungeonService = DungeonService(cache=cache, systemCache=systemCache)
 
     intents = discord.Intents.default()
     intents.message_content = True
@@ -49,14 +51,14 @@ if __name__ == '__main__':
     #Events
     @bot.event
     async def on_ready():
-        await bot.add_cog(AdminCog(bot, cache, monsterCache, characterService, abilityService, lootService, inventoryService, merchantService, monsterService))
-        await bot.add_cog(TasksCog(bot, cache, characterService, monsterService))
+        await bot.add_cog(AdminCog(bot, cache, monsterCache, systemCache, characterService, abilityService, lootService, inventoryService, merchantService, monsterService))
+        await bot.add_cog(TasksCog(bot, cache, monsterCache, systemCache, characterService, monsterService))
         await bot.add_cog(MerchantCog(bot, cache, merchantService, characterService, inventoryService))
         await bot.add_cog(CharacterCog(bot, cache, characterService))
         await bot.add_cog(CombatCog(bot, cache, monsterCache, combatService, characterService, abilityService, monsterService))
         await bot.add_cog(AbilityCog(bot, cache, characterService, abilityService))
         await bot.add_cog(InventoryCog(bot, cache, monsterCache, inventoryService, characterService, monsterService))
-        await bot.add_cog(DungeonCog(bot, monsterCache, monsterService))
+        await bot.add_cog(DungeonCog(bot, monsterCache, monsterService, dungeonService))
         print("We're alive!")
         return 
 

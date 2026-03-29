@@ -12,10 +12,11 @@ import json
 import os
 
 class AdminCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, characterService:CharacterService, abilityService:AbilityService, lootService:LootService, inventoryService:InventoryService, merchantService:MerchantService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, systemCache:SimpleCache, characterService:CharacterService, abilityService:AbilityService, lootService:LootService, inventoryService:InventoryService, merchantService:MerchantService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.monsterCache = monsterCache
+        self.systemCache = systemCache
         self.characterService = characterService
         self.abilityService = abilityService
         self.lootService = lootService
@@ -31,7 +32,11 @@ class AdminCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def ResetShop(self, ctx):
         self.cache.delete("Wandering Merchant")
+        self.cache.delete("Scroll Merchant")
         await ctx.reply("Shop Reset")
+        channel = self.bot.get_channel(self.generalChatID)
+        allowed_mentions = discord.AllowedMentions(everyone = True)
+        await channel.send("@everyone The merchants have new inventory", allowed_mentions=allowed_mentions)
         return
 
     @commands.command(hidden=True)
@@ -99,5 +104,11 @@ class AdminCog(commands.Cog):
         monster = await self.monsterService.GetMobMonster()
 
         await ctx.reply(f"{monster.Name} has been spawned in the dungeon")
-        channel = self.bot.get_channel(self.dungeonChatId)
+        channel = self.bot.get_channel(self.dungeonChatID)
         await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+
+    @commands.command(hidden=True)
+    @commands.has_permissions(administrator=True)
+    async def InspectCache(self, ctx):
+        print(json.dumps(self.systemCache.cache, indent=4))
+        await ctx.reply("Cache printed to console")

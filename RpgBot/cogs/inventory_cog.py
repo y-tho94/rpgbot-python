@@ -224,14 +224,15 @@ class InventoryCog(commands.Cog):
             target = ctx.author
             response = await self.inventoryService.UseItem(player, target.name, itemName)
             await ctx.reply(json.dumps(response, indent=4))
-        elif ctx.channel.id != self.dungeonChatId:
+        elif ctx.guild.get_member_named(target) is not None:
+            target = ctx.guild.get_member_named(target)
             await self.characterService.GetSetChar(target.name)
             response = await self.inventoryService.UseItem(player, target.name, itemName)
             await ctx.reply(json.dumps(response, indent=4))
         else:
             monster = self.monsterCache.get(target)
             if monster is not None:
-                response = await self.monsterService.UseItem(player, target, itemName)
+                response = await self.monsterService.UseItem(player, monster, itemName)
                 await ctx.reply(json.dumps(response, indent=4))
 
         await self.inventoryService.DiscardItem(player, itemName)

@@ -138,11 +138,13 @@ class Character:
         self.Level = self.Strength + self.Dexterity + self.Endurance + self.Intelligence + self.Faith + self.Luck 
         self.NextXPtoLevel = self.calcXpToLevel()
         self.AttackRating = strMod if strMod > dexMod else dexMod
-        self.MaxHP = 10 + endMod
-        self.MaxAP = 10 + intMod
-        self.Evasion = 10 + dexMod
-        self.MaxInventory = self.Strength if self.Strength > self.Intelligence else self.Intelligence
-        self.MaxAbilities = self.Faith if self.Faith > self.Intelligence else self.Intelligence
+        self.MaxHP = (10 + endMod) * 2 
+        self.MaxAP = 10 + (intMod if intMod > fthMod else fthMod)
+        self.Evasion = 10 + dexMod + luckMod
+        maxinvraw = self.Strength if self.Strength > self.Intelligence else self.Intelligence
+        self.MaxInventory = maxinvraw if maxinvraw <= 30 else 30
+        maxabraw = 10 + (fthMod if fthMod > intMod else intMod)
+        self.MaxAbilities = maxabraw if maxabraw <= 20 else 20
         self.CritChance = self.Luck + fthMod
         self.DamageReduction = dexMod + endMod
         self.SpellDamage = intMod if intMod > fthMod else fthMod
@@ -173,7 +175,7 @@ class Character:
         self.CurrentAP = self.MaxAP
         
     def calcXpToLevel(self):
-        return int(math.pow(self.Level - 1, 1.5) // 1)
+        return int((1.5 * math.pow(self.Level - 1, 1.5) // 1))
 #end class def
 
 
@@ -211,8 +213,8 @@ class Inventory():
     @staticmethod
     def dedupe(items:list):
         for item in items:
-            #don't rename potions
-            if item.Name.startswith("Potion"):
+            #don't rename consumables, since they can be stacked and the name is less important
+            if item.Type == "Consumable":
                 continue
 
             #get list of all items with the same name

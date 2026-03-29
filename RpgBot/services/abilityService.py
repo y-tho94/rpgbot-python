@@ -1,3 +1,4 @@
+from copy import deepcopy
 from data.dataContext import AbilityTable, CharacterTable, Context
 from models.character import Character
 from services.cacheService import SimpleCache
@@ -7,56 +8,57 @@ from sqlalchemy import select, update
 import random
 
 class AbilityService():
-    def __init__(self, db:Context, cache:SimpleCache):
+    def __init__(self, db:Context, cache:SimpleCache, systemCache:SimpleCache):
         self.db = db.engine
         self.cache = cache
+        self.systemCache = systemCache
 
         return
+
+    async def GetSetCache(self):
+        abilities = deepcopy(self.systemCache.get("Abilities"))
+        if abilities is None:
+            session = Session(bind=self.db)
+            statement = select(AbilityTable)
+            try:
+                abilitiesLocal = session.execute(statement).scalars().all()
+                session.close()
+                self.systemCache.set("Abilities", abilitiesLocal)
+                return deepcopy(abilitiesLocal)
+            except Exception as ex:
+                session.close()
+                print(ex)
+        else:
+            return abilities
 
     async def GenerateAbility(self):
-        session = Session(bind=self.db)
-        statement = select(AbilityTable)
-        try:
-            possibilities = session.execute(statement).scalars().all()
-            abilityObj = random.choice(possibilities)
-            session.close()
+        possibilities = await self.GetSetCache()
 
-            if abilityObj is None: 
-                return None
+        abilityObj = random.choice(possibilities)
+        if abilityObj is None: 
+            return None
 
-            ability = Ability().fromAbilityTable(abilityObj)
-            return ability
-
-        except Exception as ex:
-            session.close()
-            print(ex)
-
-        return
+        ability = Ability().fromAbilityTable(abilityObj)
+        return ability
 
     async def GenerateAbilityByName(self, abilityName:str):
-        session = Session(bind=self.db)
-        statement = select(AbilityTable).filter_by(name = abilityName)
-        try:
-            abilityObj = session.execute(statement).scalars().first()
-            session.close()
+        abilities = await self.GetSetCache()
+        
+        abilityObj = list(filter(lambda i: i.name == abilityName, abilities))
 
-            if abilityObj is None: 
-                return None
-
-            ability = Ability().fromAbilityTable(abilityObj)
-            return ability
-
-        except Exception as ex:
-            session.close()
-            print(ex)
+        if abilityObj is None: 
             return None
-    
+
+        ability = Ability().fromAbilityTable(abilityObj[0])
+        return ability
+
     async def ShowAbilityList(self, player:str):
         character = self.cache.get(player) or Character()
         inv = character.Inventory
 
         return {
-            "Ability": [item.Name for item in inv.Ability]
+            "AP": f"{character.MaxAP} / {character.CurrentAP}",
+            "Ability": [f"{item.Name} | {item.Cost}" for item in inv.Ability]
         }
 
     async def DescribeAbility(self, ability:Ability):
@@ -86,7 +88,7 @@ class AbilityService():
             
             return f"{character.Name} learned {ability.Name}"
         else:
-            return f"{character.Name} could not learn {ability.Name}"
+            return f"{character.Name} could not learn {ability.Name} because they know too many"
 
     async def ForgetAbility(self, player:str, abilityName:str):
         character = self.cache.get(player) or Character()
@@ -94,10 +96,10 @@ class AbilityService():
         abilityToForget = list(filter(lambda i: i.Name == abilityName, character.Inventory.Ability))
         if len(abilityToForget) == 0:
             return {
-                "Error": "No ability of that name in abilities"    
+                "Error": f"No ability '{abilityName}' in abilities"    
             }
 
-        character.Inventory.Ability = [ability for ability in character.Inventory.Ability if ability.Name != abilityName]
+        character.Inventory.Ability.remove(abilityToForget[0])
         character.Inventory.checkInventoryForDuplicates()
 
         session = Session(bind = self.db)
@@ -117,7 +119,7 @@ class AbilityService():
         itemToRename = list(filter(lambda i: i.Name == abilityName, character.Inventory.Ability))
         if len(itemToRename) == 0:
             return {
-                "Error": "No ability of that name in abilities"    
+                "Error": f"No ability '{abilityName}' in abilities"    
             }
 
         itemToRename[0].Name = newAbilityName

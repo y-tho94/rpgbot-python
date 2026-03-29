@@ -19,10 +19,10 @@ class MerchantCog(commands.Cog):
         return
 
     @commands.command(breif="Show Merchant inventory", aliases=["Merchant"])
-    async def ShowMerchant(self, ctx):
+    async def ShowMerchant(self, ctx, *, merchantName="Wandering Merchant"):
         await self.merchantService.GetSetMerchant()
 
-        retval = await self.merchantService.ShowMerchantInventory()
+        retval = await self.merchantService.ShowMerchantInventory(merchantName)
         await ctx.reply(json.dumps(retval, indent=4))
 
     @commands.command(brief="Describe item in merchant inventory", aliases=["DescM"])
@@ -60,7 +60,7 @@ class MerchantCog(commands.Cog):
         await ctx.reply(f"Your item is worth {itemVal} Gold. The merchant will buy it for {sellVal} Gold")
 
     @commands.command(brief="Buy item from merchant")
-    async def Buy(self, ctx, *, itemName:str):
+    async def Buy(self, ctx, itemName:str, merchantName:str="Wandering Merchant"):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item name given to buy")
             return
@@ -68,7 +68,7 @@ class MerchantCog(commands.Cog):
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
 
-        response = await self.merchantService.BuyItem(player, itemName)
+        response = await self.merchantService.BuyItem(player, itemName, merchantName)
         if response is not None:
             await ctx.reply(json.dumps(response, indent=4))
             return

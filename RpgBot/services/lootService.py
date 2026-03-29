@@ -1,74 +1,184 @@
-from data.dataContext import AbilityTable, Context, LootTable
-from models.loot import Loot
+from copy import deepcopy
+from data.dataContext import AbilityTable, Context, LootTable, RaidLootTable, SpecialLootTable
+from models.loot import Effect, Loot
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import random
 
+from services.cacheService import SimpleCache
+
 class LootService():
-    def __init__(self, db: Context):
+    def __init__(self, db: Context, systemCache:SimpleCache):
         self.db = db.engine
+        self.systemCache = systemCache
     
+    async def GetSetCache(self):
+        lootPossibilities =  self.systemCache.get("Loot")
+        if lootPossibilities is None:
+            session = Session(bind=self.db)
+            statement = select(LootTable)
+            try:
+                lootPossibilitiesLocal = session.execute(statement).scalars().all()
+                session.close()
+                self.systemCache.set("Loot", lootPossibilitiesLocal)
+            except Exception as ex:
+                session.close()
+                print(ex)
+        
+        specialLootPossibilities = self.systemCache.get("SpecialLoot")
+        if specialLootPossibilities is None:
+            session = Session(bind=self.db)
+            statement = select(SpecialLootTable)
+            try:
+                specialLootPossibilitiesLocal = session.execute(statement).scalars().all()
+                session.close()
+                self.systemCache.set("SpecialLoot", specialLootPossibilitiesLocal)
+            except Exception as ex:
+                session.close()
+                print(ex)
+        raidLootPossibilities = self.systemCache.get("RaidLoot")
+        if raidLootPossibilities is None:
+            session = Session(bind=self.db)
+            statement = select(RaidLootTable)
+            try:
+                raidLootPossibilitiesLocal = session.execute(statement).scalars().all()
+                session.close()
+                self.systemCache.set("RaidLoot", raidLootPossibilitiesLocal)
+            except Exception as ex:
+                session.close()
+                print(ex)
+
     async def GenerateLoot(self):
-        session = Session(bind=self.db)
-        statement = select(LootTable)
-        try:
-            lootPossibilities = session.execute(statement).scalars().all()
-            lootObj = random.choice(lootPossibilities)
-            session.close()
+        lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
-            if lootObj is None: 
-                return None
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("Loot"))
 
-            loot = Loot().fromLootTable(lootObj)
-            if loot.Name == "Skill Scroll":
-                loot = await self._generateScroll(loot)
-            return loot
+        lootObj = random.choice(lootPossibilities)
+        if lootObj is None: 
+            return None
 
-        except Exception as ex:
-            session.close()
-            print(ex)
+        loot = Loot().fromLootTable(lootObj)
+        if loot.Name == "Skill Scroll":
+            lootScroll = await self._generateScroll(loot)
+            return lootScroll
+        return loot
 
+    
+    async def GenerateSpecialLoot(self):
+        lootPossibilities = deepcopy(self.systemCache.get("SpecialLoot"))
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("SpecialLoot"))
+
+        lootObj = random.choice(lootPossibilities)
+        if lootObj is None: 
+            return None
+
+        loot = Loot().fromSpecialLootTable(lootObj)
+        return loot
+    
+    async def GenerateRaidLoot(self):
+        lootPossibilities = deepcopy(self.systemCache.get("RaidLoot"))
+
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("RaidLoot"))
+
+        lootObj = random.choice(lootPossibilities)
+        if lootObj is None: 
+            return None
+        loot = Loot().fromRaidLootTable(lootObj)
+        return loot
 
     async def GenerateLootByName(self, lootName:str):
-        session = Session(bind=self.db)
-        statement = select(LootTable).filter_by(name = lootName)
-        try:
-            lootObj = session.execute(statement).scalars().first()
-            session.close()
+        lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
-            if lootObj is None: 
-                return None
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("Loot"))
+            
+        lootObjList = list(filter(lambda i: i.name == lootName, lootPossibilities))
+        if lootObjList is None or len(lootObjList) == 0: 
+            return None
+        loot = Loot().fromLootTable(lootObjList[0])
+        if lootName == "Skill Scroll":
+            lootScroll = await self._generateScroll(loot)
+            return lootScroll
+        return loot
+    
 
-            loot = Loot().fromLootTable(lootObj)
+    async def GenerateSpecialLootByName(self, lootName:str):
+        lootPossibilities =  deepcopy(self.systemCache.get("SpecialLoot"))
 
-            if lootName == "Skill Scroll":
-                loot = await self._generateScroll(loot)
-            return loot
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("SpecialLoot"))
 
-        except Exception as ex:
-            session.close()
-            print(ex)
+        lootObjList = list(filter(lambda i: i.name == lootName, lootPossibilities))
+        if lootObjList is None or len(lootObjList) == 0: 
+            return None
+        loot = Loot().fromSpecialLootTable(lootObjList[0])
+        return loot
+
+    async def GenerateRaidLootByName(self, lootName:str):
+        lootPossibilities =  deepcopy(self.systemCache.get("RaidLoot"))
+
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("RaidLoot"))
+            
+        lootObj = list(filter(lambda i: i.name == lootName, lootPossibilities))
+        if lootObj is None: 
+            return None
+        loot = Loot().fromRaidLootTable(lootObj[0])
+        return loot
     
     async def GenerateLootByType(self, lootType:str):
-        session = Session(bind=self.db)
-        statement = select(LootTable).filter_by(type = lootType)
-        try:
-            lootPossibilities = session.execute(statement).scalars().all()
-            lootObj = random.choice(lootPossibilities)
-            session.close()
+        lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
-            if lootObj is None: 
-                return None
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("Loot"))
 
-            loot = Loot().fromLootTable(lootObj)
-            if loot.Name == "Skill Scroll":
-                loot = await self._generateScroll(loot)
-            return loot
+        lootObj = list(filter(lambda i: i.type == lootType, lootPossibilities))
+        if lootObj is None: 
+            return None
+        lootObj = random.choice(lootObj)
+        loot = Loot().fromLootTable(lootObj)
+        if loot.Name == "Skill Scroll":
+            newloot = await self._generateScroll(loot)
+            return newloot
+        return loot
+    
+    async def GenerateSpecialLootByType(self, lootType:str):
+        lootPossibilities =  deepcopy(self.systemCache.get("SpecialLoot"))
 
-        except Exception as ex:
-            session.close()
-            print(ex)
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("SpecialLoot"))
 
+        lootObj = list(filter(lambda i: i.type == lootType, lootPossibilities))
+        if lootObj is None: 
+            return None
+        lootObj = random.choice(lootObj)
+        loot = Loot().fromSpecialLootTable(lootObj)
+        return loot
+    
+    async def GenerateRaidLootByType(self, lootType:str):
+        lootPossibilities =  deepcopy(self.systemCache.get("RaidLoot"))
+
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities =  deepcopy(self.systemCache.get("RaidLoot"))
+
+        lootObj = list(filter(lambda i: i.type == lootType, lootPossibilities))
+        if lootObj is None: 
+            return None
+        lootObj = random.choice(lootObj)
+        loot = Loot().fromRaidLootTable(lootObj)
+        return loot
 
     async def GenerateStartingLoot(self):
         startingInv = []
@@ -81,18 +191,28 @@ class LootService():
         return startingInv
 
     async def _generateScroll(self, loot:Loot):
-        session = Session(bind=self.db)
-        statement = select(AbilityTable)
+        abilities = deepcopy(self.systemCache.get("Abilities"))
 
-        abilities = session.execute(statement).scalars().all()
+        if abilities is None:
+            session = Session(bind=self.db)
+            statement = select(AbilityTable)
+
+            abilities = session.execute(statement).scalars().all()
+            session.close()
+
+            self.systemCache.set("Abilities", abilities)
+                    
         ability = random.choice(abilities)
-        session.close()
-
         abilityName = ability.name
 
-        learnEffect = loot.Effects.Use[0]
-        learnEffect = learnEffect.replace("***", abilityName)
-        loot.Effects.Use[0] = learnEffect
-        loot.Name = f"{abilityName} Scroll"
-        return loot
+        newLoot = loot
+        newLoot.Description = loot.Description
+        newLoot.Type = loot.Type
+        newLoot.Effects = Effect(**loot.Effects.to_dict()) 
+
+        learnEffect = newLoot.Effects.Use[0]
+        learnEffect = f"Learn {abilityName}"
+        newLoot.Effects.Use[0] = learnEffect
+        newLoot.Name = f"{abilityName} Scroll"
+        return newLoot
 

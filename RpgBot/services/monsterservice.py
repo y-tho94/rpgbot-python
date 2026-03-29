@@ -1,3 +1,4 @@
+from copy import deepcopy
 from data.dataContext import Context, MonsterTable
 from models.ability import Ability
 from models.monster import Monster
@@ -12,30 +13,81 @@ import random
 
 
 class MonsterService:
-    def __init__(self, db:Context, cache:SimpleCache, monsterCache:SimpleCache, characterService:CharacterService, lootService:LootService):
+    def __init__(self, db:Context, cache:SimpleCache, monsterCache:SimpleCache, systemCache:SimpleCache, characterService:CharacterService, lootService:LootService):
         self.db = db.engine
         self.cache = cache
         self.monsterCache = monsterCache
+        self.systemCache = systemCache
         self.characterService = characterService
         self.lootService = lootService
         return
 
+    #study a monster and learn its abilities
+    async def StudyMonster(self, player:str, monsterName:str):
+        ch = self.cache.get(player) or Character()
+
+        chAbilities = ch.Inventory.Ability
+        study = list(filter(lambda a: a.Description == "Gain the innate ability to study monsters", chAbilities))
+        if len(study) == 0:
+            return {
+                "Error": "You don't know 'Study'"    
+            }
+
+        monster = self.monsterCache.get(monsterName) or Monster()
+        if monster.Name == "":
+            return {
+                "Error": f"No monster '{monsterName}' exists in the dungeon."
+            }
+
+        monsterInfo = {
+            "HP": monster.HP,
+            "Attack Rating": monster.AttackRating,
+            "Damage Reduction": monster.DamageReduction,
+            "Evasion": monster.Evasion,
+            "Crit Chance": monster.CritChance,
+            "Weakness" : monster.Weakness,
+            "Resistance": monster.Resistance,
+            "Common Drops": monster.DropTable.Loot,
+            "Rare Drops": monster.DropTable.SpecialLoot + monster.DropTable.RaidLoot
+        }
+
+        return monsterInfo
+
+
     #get mob monster from db then save it to monster cache and return it
-    async def GetMobMonster(self):
+    async def GetMobMonster(self, floor:int):
         monstersInDungeon = self.monsterCache.cache.keys()
-        if len(monstersInDungeon) == 20:
+        if len(monstersInDungeon) >= 20:
             return None
 
-        statement = select(MonsterTable).filter_by(type = "mob")
+        mobMonsters = deepcopy(self.systemCache.get("MobMonsters"))
+        if mobMonsters is None:
+            statement = select(MonsterTable).filter_by(type = "mob")
 
-        session = Session(bind=self.db)
-        try:
-            monsters = session.execute(statement).scalars().all()
-            session.close()
-            if monsters is None: 
+            session = Session(bind=self.db)
+            try:
+                monsters = session.execute(statement).scalars().all()
+                session.close()
+                if monsters is None: 
+                    return None
+
+                self.systemCache.set("MobMonsters", monsters)
+
+                monstersByFloor = list(filter(lambda mt: mt.floor == floor, monsters))
+                monsterObj = random.choice(monstersByFloor)
+
+                monster = Monster().FromMonsterTable(monsterObj)
+                monstersInCacheWithSameName = [m for m in self.monsterCache.cache.keys() if m.startswith(monster.Name)]
+                monsterName = f"{monster.Name} {len(monstersInCacheWithSameName) + 1}"
+                monster.Name = monsterName
+                self.monsterCache.set(monster.Name, monster)
+                return monster
+            except Exception as ex:
+                print(ex)
                 return None
-
-            monsterObj = random.choice(monsters)
+        else:
+            monstersByFloor = list(filter(lambda mt: mt.floor == floor, mobMonsters))
+            monsterObj = random.choice(monstersByFloor)
 
             monster = Monster().FromMonsterTable(monsterObj)
             monstersInCacheWithSameName = [m for m in self.monsterCache.cache.keys() if m.startswith(monster.Name)]
@@ -43,30 +95,37 @@ class MonsterService:
             monster.Name = monsterName
             self.monsterCache.set(monster.Name, monster)
             return monster
-        except Exception as ex:
-            print(ex)
-            return None
-            
 
     #get raid monster from db then save it to monster cache and return it
-    async def GetRaidMonster(self):
-        statement = select(MonsterTable).filter_by(type = "raid")
+    async def GetRaidMonster(self, floor:int):
+        raidMonsters = deepcopy(self.systemCache.get("RaidMonsters"))
 
-        session = Session(bind=self.db)
-        try:
-            monsters = session.execute(statement).scalars()
-            session.close()
-            if monsters is None: 
+        if raidMonsters is None:
+            statement = select(MonsterTable).filter_by(type = "raid")
+
+            session = Session(bind=self.db)
+            try:
+                monsters = session.execute(statement).scalars().all()
+                session.close()
+                if monsters is None: 
+                    return None
+
+                self.systemCache.set("RaidMonsters", monsters)
+                monstersByFloor = list(filter(lambda mt: mt.floor == floor, monsters))
+                monsterObj = random.choice(monstersByFloor)
+
+                monster = Monster().FromMonsterTable(monsterObj)
+                self.monsterCache.set(monster.Name, monster)
+                return monster
+            except Exception as ex:
+                print(ex)
                 return None
-
-            monsterObj = random.choice(monsters)
-
+        else:
+            monstersByFloor = list(filter(lambda mt: mt.floor == floor, raidMonsters))
+            monsterObj = random.choice(monstersByFloor)
             monster = Monster().FromMonsterTable(monsterObj)
             self.monsterCache.set(monster.Name, monster)
             return monster
-        except Exception as ex:
-            print(ex)
-            return None
 
     #use ability on monster
     async def UseAbility(self, player:str, target:str, abilityName):
@@ -96,16 +155,34 @@ class MonsterService:
         #apply effects
         summary = [f"{ch.Name} used {ability.Name}"]
 
+        modstat = 0
         abilityType = ability.Type
+        match abilityType:
+            case "Skill":
+                modstat = ch.AttackRating
+            case "Spell":
+                modstat = ch.SpellDamage
+            case _:
+                pass
+
         effectType = ability.Effects.Type
-
         modifier = 0
-
         match effectType:
             case "Holy":
-                modifier += ((ch.Faith - 10) // 2)  + ch.SpellDamage
+                modifier += ((ch.Faith - 10) // 2)  + modstat
+            case "Slash":
+                dexMod = ((ch.Dexterity - 10) // 2)
+                strMod = ((ch.Strength - 10) // 2)
+                mod = strMod if strMod > dexMod else dexMod
+                modifier = mod + modstat
+            case "Pierce":
+                dexMod = ((ch.Dexterity - 10) // 2)
+                modifier = dexMod + modstat
+            case "Bludgeon":
+                strMod = ((ch.Strength - 10) // 2)
+                modifier = strMod + modstat
             case _:
-                modifier += ((ch.Intelligence - 10) // 2)  + ch.SpellDamage
+                modifier += ((ch.Intelligence - 10) // 2)  + modstat
 
         healAmount = 0 if ability.Effects.Heal == 0 else ability.Effects.Heal + modifier
         selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
@@ -158,7 +235,7 @@ class MonsterService:
             critStr = "critically "
 
         evadeChance = random.randint(1,100)
-        if monster.Evasion >= evadeChance:
+        if monster.Evasion >= evadeChance and inflictAmount > 0 and evadeChance < 90:
             inflictAmount = 0
             summary.append(f"{ch.Name} attacked {monster.Name} with {ability.Name}, but missed!")
 
@@ -177,7 +254,7 @@ class MonsterService:
             summary.append(f"{ch.Name} healed {monster.Name} for {healAmount} HP")
 
         #damage target
-        if damageTaken > 0:
+        if inflictAmount > 0:
             summary.append(f"{ch.Name} {critStr}inflicted {damageTaken} {effectType} damage to {monster.Name}")
 
         #check for monster death, responds if alive
@@ -186,18 +263,13 @@ class MonsterService:
                 summary = await self.DropLoot(summary, playerInCombat, monster)
             self.monsterCache.delete(monster.Name)
         else:
-            summary = await self.MonsterAIAction(summary, ch, monster)
+            summary = await self.MonsterAIAction(summary, ch, player, monster)
         
-        #check for character death
         if ch.CurrentHP <= 0:
-            summary.append(f"{ch.Name} has fallen. Their body has been claimed by the dungeon, never to be seen again.")
-            self.cache.delete(player)
-            monster.InteractingPlayers.remove(player)
-            self.monsterCache.set(monster.Name, monster)
-            await self.characterService.KillCharacter(player)
+            summary = await self._CharDeath(summary, ch, player, monster)
         else:
             self.cache.set(player, ch)
-        
+
         return {
             "Summary": summary      
         }
@@ -213,7 +285,7 @@ class MonsterService:
         summary = []
         #character attacks monster
         evadeChance = random.randint(1,100)
-        if monster.Evasion >= evadeChance:
+        if monster.Evasion >= evadeChance and evadeChance < 90:
             summary.append(f"{ch.Name} attacked {monsterName}, but missed!")
         else:
             attackSummary = f"{ch.Name} attacked {monsterName} "
@@ -249,6 +321,11 @@ class MonsterService:
 
             attackSummary += f"for {damageReal} {damageType} damage"
             
+            if weapon[0].Effects.Heal > 0:
+                healAmount = weapon[0].Effects.Heal + (ch.AttackRating // 2)
+                ch.CurrentHP += healAmount if ch.CurrentHP + healAmount <= ch.MaxHP else ch.MaxHP
+                attackSummary += f" and healed {ch.Name} for {healAmount} HP"
+
             summary.append(attackSummary)
 
         #check for monster death, responds if alive
@@ -257,25 +334,17 @@ class MonsterService:
                 summary = await self.DropLoot(summary, playerInCombat, monster)
             self.monsterCache.delete(monster.Name)
         else:
-            summary = await self.MonsterAIAction(summary, ch, monster)
+            summary = await self.MonsterAIAction(summary, ch, player, monster)
 
-        #check for character death
-        if ch.CurrentHP <= 0:
-            summary.append(f"{ch.Name} has fallen. Their body has been claimed by the dungeon, never to be seen again.")
-            self.cache.delete(player)
-            monster.InteractingPlayers.remove(player)
-            await self.characterService.KillCharacter(player)
-        else:
-            self.cache.set(player, ch)
         return {
             "Summary": summary      
         }
 
     #use item on monster
     async def UseItem(self, player:str, monster:Monster, itemName:str):
-        character = self.cache.get(player) or Character()
+        ch = self.cache.get(player) or Character()
         
-        itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
+        itemToUse = list(filter(lambda i: i.Name == itemName, ch.Inventory.Stored))
         if len(itemToUse) == 0:
             return {
                 "Error": "No item of that name in stored inventory"    
@@ -292,17 +361,17 @@ class MonsterService:
         if player not in monster.InteractingPlayers:
             monster.InteractingPlayers.append(player)
 
+        summary = []
         for e in useEffects:
             tokens = e.split()
             effect = tokens[0]
 
-            summary = []
             match effect:
                 case "Heal":
                     amount = int(tokens[1])
                     newHP = monster.HP + amount
                     monster.HP = newHP if newHP <= monster.MaxHP else monster.MaxHP
-                    summary.append(f"{character.Name} healed {monster.Name} for {amount} HP")
+                    summary.append(f"{ch.Name} healed {monster.Name} for {amount} HP")
                 case "Inflict":
                     amount = int(tokens[1])
                     dmgType = tokens[2]
@@ -314,12 +383,12 @@ class MonsterService:
 
                     newHP = monster.HP - amount
                     monster.HP = newHP
-                    summary.append(f"{character.Name} inflicted {amount} {dmgType} damage to {monster.Name}")
+                    summary.append(f"{ch.Name} inflicted {amount} {dmgType} damage to {monster.Name}")
                 case "Buff":
                     stat = tokens[1]
                     amount = int(tokens[2])
 
-                    summary.append(f"{character.Name} boosted {monster.Name}'s {stat} by {amount}")
+                    summary.append(f"{ch.Name} boosted {monster.Name}'s {stat} by {amount}")
                     match stat:
                         case "AttackRating" | "SpellDamage":
                             monster.AttackRating += amount
@@ -335,7 +404,7 @@ class MonsterService:
                     stat = tokens[1]
                     amount = int(tokens[2])
 
-                    summary.append(f"{character.Name} boosted {monster.Name}'s {stat} by {amount}")
+                    summary.append(f"{ch.Name} lowered {monster.Name}'s {stat} by {amount}")
                     match stat:
                         case "AttackRating" | "SpellDamage":
                             monster.AttackRating = 0 if monster.AttackRating - amount < 0 else monster.AttackRating - amount
@@ -347,15 +416,15 @@ class MonsterService:
                             monster.CritChance = 0 if monster.CritChance - amount < 0 else monster.CritChance - amount
                 case _:
                     pass
-            
+            continue
 
-            #check for monster death, responds if alive
+        #check for monster death, responds if alive
         if monster.HP <= 0:
             for playerInCombat in monster.InteractingPlayers:
                 summary = await self.DropLoot(summary, playerInCombat, monster)
             self.monsterCache.delete(monster.Name)
         else:
-            summary = await self.MonsterAIAction(summary, character, monster)
+            summary = await self.MonsterAIAction(summary, ch, player, monster)
 
         return {
             "Summary" : summary    
@@ -372,16 +441,28 @@ class MonsterService:
         ch.Inventory.XP += monsterLoot.XP
 
         if ch.MaxInventory > len(ch.Inventory.Stored):
-            lootdrop =  random.choice(monsterLoot.Loot)
-            item = await self.lootService.GenerateLootByName(lootdrop)
-            summary.append(f"{ch.Name} also received {item.Name}!")
+            rareDropChance = random.randint(1,100) + ch.Luck
+            item = None
+            if len(monsterLoot.SpecialLoot) == 0 or rareDropChance <= 95:
+                lootdrop =  random.choice(monsterLoot.Loot)
+                item = await self.lootService.GenerateLootByName(lootdrop)
+                summary.append(f"{ch.Name} also received {item.Name}!")
+            else:
+                specialLootDrop = random.choice(monsterLoot.SpecialLoot)
+                item = await self.lootService.GenerateSpecialLootByName(specialLootDrop)
+                summary.append(f"{ch.Name} also received a rare {item.Name}!")
+            if len(monsterLoot.RaidLoot) > 0:
+                raidLootDrop = random.choice(monsterLoot.RaidLoot)
+                item = await self.lootService.GenerateRaidLootByName(raidLootDrop)
+                summary.append(f"{ch.Name} also received a legendary {item.Name}!")
+
             ch.Inventory.Stored.append(item)
             ch.Inventory.checkInventoryForDuplicates()
         self.cache.set(player, ch)
         await self.characterService.SaveCharacter(player, ch)
         return summary
 
-    async def MonsterAIAction(self, summary:list, ch:Character, monster:Monster):
+    async def MonsterAIAction(self, summary:list, ch:Character, pname:str, monster:Monster):
         aiActions = monster.AI.Actions
         monsterMaxHP = monster.MaxHP
         monsterHP = monster.HP
@@ -395,20 +476,29 @@ class MonsterService:
                     command = actionTokens[0]
 
                     match command:
+                        case "Wait":
+                            summary.append(f"{monster.Name} is waiting...")
                         case "Attack":
-                            if len(actionTokens) > 1:
-                                target = actionTokens[1]
-                                match target:
-                                    case "All":
-                                        for player in monster.InteractingPlayers:
-                                            targetCh = self.cache.get(player) or Character()
-                                            summary.append(await self._MonsterCombatMath(targetCh, monster))
+                            target = actionTokens[1]
+                            dmgType = actionTokens[2]
+                            match target:
+                                case "All":
+                                    for player in monster.InteractingPlayers:
+                                        targetCh = self.cache.get(player) or Character()
+                                        summary.append(await self._MonsterCombatMath(targetCh, monster, dmgType))
+                                        if targetCh.CurrentHP <= 0:
+                                            summary = await self._CharDeath(summary, targetCh, player, monster)
+                                        else:
                                             self.cache.set(player, targetCh)
-                                            continue
-                                    case _:
-                                        pass
-                            else:
-                                summary.append(await self._MonsterCombatMath(ch, monster))
+                                        continue
+                                case "Char":
+                                    summary.append(await self._MonsterCombatMath(ch, monster, dmgType))
+                                    if ch.CurrentHP <= 0:
+                                        summary = await self._CharDeath(summary, ch, pname, monster)
+                                    else:
+                                        self.cache.set(pname, ch)
+                                    continue
+
                             self.monsterCache.set(monster.Name, monster)
                         case "Heal":
                             amount = int(actionTokens[1])
@@ -420,12 +510,10 @@ class MonsterService:
                             boostAmount = int(actionTokens[2])
                             summary.append(f"{monster.Name} boosted its {stat} by {boostAmount}")
                             match stat:
-                                case "AttackRating":
+                                case "AttackRating" | "SpellDamage":
                                     monster.AttackRating += boostAmount
                                 case "DamageReduction":
                                     monster.DamageReduction += boostAmount
-                                case "SpellDamage":
-                                    monster.SpellDamage += boostAmount
                                 case "Evasion":
                                     monster.Evasion += boostAmount
                                 case "CritChance":
@@ -446,7 +534,7 @@ class MonsterService:
                                     ch.Evasion = 0 if ch.Evasion - debuffAmount < 0 else ch.Evasion - debuffAmount
                                 case "CritChance":
                                     ch.CritChance = 0 if ch.CritChance - debuffAmount < 0 else ch.CritChance - debuffAmount
-                            self.monsterCache.set(monster.Name, monster)
+                            self.cache.set(pname, ch)
                         case "Flee":
                             summary.append(f"{monster.Name} fled the dungeon!")
                             self.monsterCache.delete(monster.Name)
@@ -456,10 +544,21 @@ class MonsterService:
             continue
         return summary
 
+    async def FleeCombat(self, player:str, monster:Monster):
+        ch = self.cache.get(player) 
+        if player not in monster.InteractingPlayers:
+            return {
+                "Error": f"{ch.Name} is not currently in combat with {monster.Name}"
+            }
 
-    async def _MonsterCombatMath(self, ch:Character, monster:Monster):
+        monster.InteractingPlayers.remove(player)
+        return {
+            "Summary": f"{ch.Name} fled from combat with {monster.Name}"     
+        }
+
+    async def _MonsterCombatMath(self, ch:Character, monster:Monster, dmgType:str):
         evadeChance = random.randint(1,100)
-        if ch.Evasion >= evadeChance:
+        if ch.Evasion >= evadeChance and evadeChance < 90:
             return f"{monster.Name} attacked {ch.Name}, but missed!"
         else:
             attackSummaryMon = f"{monster.Name} attacked {ch.Name} "
@@ -473,7 +572,36 @@ class MonsterService:
             damageRealMon = damageTotMon if damageTotMon > 0 else 0
             ch.CurrentHP -= damageRealMon
 
-            attackSummaryMon += f"for {damageRealMon} damage"
+            attackSummaryMon += f"for {damageRealMon} {dmgType} damage"
 
             return attackSummaryMon
+    
+    async def _CharDeath(self, summary:list, ch:Character, player:str, monster:Monster):
+        summary.append(f"{ch.Name} has fallen. Their body has been claimed by the dungeon, never to be seen again.")
+        lootables = self.systemCache.get("Lootables") or []
+        
+        #Add equipped items to lootables so they can be dropped on death and reclaimed later
+        for item in ch.Inventory.Equipped:
+            lootables.append(item)
 
+        #deduplicate lootables
+        for item in lootables:
+            duplicates = list(filter(lambda i: i.Name == item.Name, lootables))
+            #if more than one item with the same name...
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in lootables:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
+        
+        lootables.sort(key=lambda i: i.Name)
+        self.systemCache.set("Lootables", lootables)
+
+        self.cache.delete(player)
+        monster.InteractingPlayers.remove(player)
+        self.monsterCache.set(monster.Name, monster)
+        await self.characterService.KillCharacter(player)
+        return summary

@@ -19,6 +19,8 @@ class MerchantInventory():
         wares = self.Wares
 
         for item in wares:
+            if item.Item.Type == "Consumable":
+                continue
             #get list of all items with the same name
             duplicates = list(filter(lambda i: i.Item.Name == item.Item.Name, wares))
 

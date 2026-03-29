@@ -40,6 +40,7 @@
     <Compile Include="services\cacheService.py" />
     <Compile Include="services\characterService.py" />
     <Compile Include="services\combatService.py" />
+    <Compile Include="services\dungeonService.py" />
     <Compile Include="services\inventoryService.py" />
     <Compile Include="services\lootService.py" />
     <Compile Include="services\merchantService.py" />
