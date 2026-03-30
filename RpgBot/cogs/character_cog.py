@@ -87,3 +87,8 @@ class CharacterCog(commands.Cog):
         response = await self.characterService.LevelUpChar(player, stat)
         await ctx.reply(json.dumps(response, indent=4))
         return
+
+    #This command lets players rest at the inn to restore their HP and AP to full. It can only be used in the general channel
+    # @commands.command(brief="Rest at the inn to restore HP and AP to full. Can only be used in the general channel", aliases=["Rest"])
+    # async def RestAtInn(self, ctx):
+    #     channel = ctx.channel

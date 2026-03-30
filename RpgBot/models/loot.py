@@ -1,12 +1,13 @@
 import random
-from data.dataContext import LootTable, RaidLootTable, SpecialLootTable
+from data.dataContext import LootTable
 
 
 class Loot():
-    def __init__(self, Name:str = "", Description:str = "", Type:str = "", Effects:dict = None):
+    def __init__(self, Name:str = "", Description:str = "", Type:str = "", Effects:dict = None, Rarity:str = ""):
         self.Name = Name
         self.Description = Description
         self.Type = Type
+        self.Rarity = Rarity
         self.Effects = Effect(**Effects) if Effects is not None else Effect()
 
     def to_dict(self):
@@ -21,48 +22,7 @@ class Loot():
         self.Name = lt.name
         self.Description = lt.description
         self.Type = lt.type
-
-        effectsDict = lt.baseEffects
-        baseEffects = Effect(**effectsDict)
-        self.Effects.Type = baseEffects.Type
-        self.Effects.AttackRating = self._applyVariance(baseEffects.AttackRating, lt.baseVariance)
-        self.Effects.DamageReduction = self._applyVariance(baseEffects.DamageReduction, lt.baseVariance)
-        self.Effects.SpellDamage = self._applyVariance(baseEffects.SpellDamage, lt.baseVariance)
-        self.Effects.MaxAP = self._applyVariance(baseEffects.MaxAP, lt.baseVariance)
-        self.Effects.MaxHP = self._applyVariance(baseEffects.MaxHP, lt.baseVariance)
-        self.Effects.Evasion = self._applyVariance(baseEffects.Evasion, lt.baseVariance)
-        self.Effects.Heal = self._applyVariance(baseEffects.Heal, lt.baseVariance)
-        self.Effects.CritChance = self._applyVariance(baseEffects.CritChance, lt.baseVariance)
-        self.Effects.Use = baseEffects.Use
-
-        return self
-    
-
-    def fromSpecialLootTable(self, lt:SpecialLootTable):
-        self.Name = lt.name
-        self.Description = lt.description
-        self.Type = lt.type
-
-        effectsDict = lt.baseEffects
-        baseEffects = Effect(**effectsDict)
-        self.Effects.Type = baseEffects.Type
-        self.Effects.AttackRating = self._applyVariance(baseEffects.AttackRating, lt.baseVariance)
-        self.Effects.DamageReduction = self._applyVariance(baseEffects.DamageReduction, lt.baseVariance)
-        self.Effects.SpellDamage = self._applyVariance(baseEffects.SpellDamage, lt.baseVariance)
-        self.Effects.MaxAP = self._applyVariance(baseEffects.MaxAP, lt.baseVariance)
-        self.Effects.MaxHP = self._applyVariance(baseEffects.MaxHP, lt.baseVariance)
-        self.Effects.Evasion = self._applyVariance(baseEffects.Evasion, lt.baseVariance)
-        self.Effects.Heal = self._applyVariance(baseEffects.Heal, lt.baseVariance)
-        self.Effects.CritChance = self._applyVariance(baseEffects.CritChance, lt.baseVariance)
-        self.Effects.Use = baseEffects.Use
-
-        return self
-    
-
-    def fromRaidLootTable(self, lt:RaidLootTable):
-        self.Name = lt.name
-        self.Description = lt.description
-        self.Type = lt.type
+        self.Rarity = lt.rarity
 
         effectsDict = lt.baseEffects
         baseEffects = Effect(**effectsDict)

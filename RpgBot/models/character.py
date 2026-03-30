@@ -164,13 +164,23 @@ class Character:
             self.CritChance += effects.CritChance
         
         #apply buffs
-        self.AttackRating = 0 if self.AttackRating + self.Buffs.AttackRating < 0 else self.AttackRating + self.Buffs.AttackRating
-        self.DamageReduction = 0 if self.DamageReduction + self.Buffs.DamageReduction < 0 else self.DamageReduction + self.Buffs.DamageReduction
-        self.SpellDamage = 0 if self.SpellDamage + self.Buffs.SpellDamage < 0 else self.SpellDamage + self.Buffs.SpellDamage
-        self.MaxHP = 0 if self.MaxHP + self.Buffs.MaxHP < 0 else self.MaxHP + self.Buffs.MaxHP
-        self.MaxAP = 0 if self.MaxAP + self.Buffs.MaxAP < 0 else self.MaxAP + self.Buffs.MaxAP
-        self.Evasion = 0 if self.Evasion + self.Buffs.Evasion < 0 else self.Evasion + self.Buffs.Evasion
-        self.CritChance = 0 if self.CritChance + self.Buffs.CritChance < 0 else self.CritChance + self.Buffs.CritChance
+        CAP_MULT = 2
+
+        maxARBuff = self.Buffs.AttackRating if self.Buffs.AttackRating <= self.AttackRating * CAP_MULT else self.AttackRating * CAP_MULT
+        maxDRBuff = self.Buffs.DamageReduction if self.Buffs.DamageReduction <= self.DamageReduction * CAP_MULT else self.DamageReduction * CAP_MULT
+        maxSDBuff = self.Buffs.SpellDamage if self.Buffs.SpellDamage <= self.SpellDamage * CAP_MULT else self.SpellDamage * CAP_MULT
+        maxHPBuff = self.Buffs.MaxHP if self.Buffs.MaxHP <= self.MaxHP * CAP_MULT else self.MaxHP * CAP_MULT
+        maxAPBuff = self.Buffs.MaxAP if self.Buffs.MaxAP <= self.MaxAP * CAP_MULT else self.MaxAP * CAP_MULT
+        maxEVBuff = self.Buffs.Evasion if self.Buffs.Evasion <= self.Evasion * CAP_MULT else self.Evasion * CAP_MULT
+        maxCCBuff = self.Buffs.CritChance if self.Buffs.CritChance <= self.CritChance * CAP_MULT else self.CritChance * CAP_MULT
+
+        self.AttackRating = 0 if self.AttackRating + maxARBuff < 0 else self.AttackRating + maxARBuff
+        self.DamageReduction = 0 if self.DamageReduction + maxDRBuff < 0 else self.DamageReduction + maxDRBuff
+        self.SpellDamage = 0 if self.SpellDamage + maxSDBuff < 0 else self.SpellDamage + maxSDBuff
+        self.MaxHP = 0 if self.MaxHP + maxHPBuff < 0 else self.MaxHP + maxHPBuff
+        self.MaxAP = 0 if self.MaxAP + maxAPBuff < 0 else self.MaxAP + maxAPBuff
+        self.Evasion = 0 if self.Evasion + maxEVBuff < 0 else self.Evasion + maxEVBuff
+        self.CritChance = 0 if self.CritChance + maxCCBuff < 0 else self.CritChance + maxCCBuff
 
         if self.CurrentAP > self.MaxAP:
             self.CurrentAP = self.MaxAP

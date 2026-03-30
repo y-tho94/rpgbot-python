@@ -23,6 +23,7 @@ class CharacterTable(Base):
     faith = Column(Integer, nullable=False)
     luck = Column(Integer, nullable=False)
     inventory = Column(JSON, nullable=False)
+    isDead = Column(Integer, nullable=False, default=0)
 
 class LootTable(Base):
     __tablename__ = "loot"
@@ -32,24 +33,7 @@ class LootTable(Base):
     type = Column(String, nullable=False)
     baseVariance = Column(Integer, nullable=False)
     baseEffects = Column(JSON, nullable=False)
-
-class SpecialLootTable(Base):
-    __tablename__ = "specialLoot"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=False)
-    type = Column(String, nullable=False)
-    baseVariance = Column(Integer, nullable=False)
-    baseEffects = Column(JSON, nullable=False)
-
-class RaidLootTable(Base):
-    __tablename__ = "raidLoot"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=False)
-    type = Column(String, nullable=False)
-    baseVariance = Column(Integer, nullable=False)
-    baseEffects = Column(JSON, nullable=False)
+    rarity = Column(String, nullable=True)
 
 class AbilityTable(Base):
     __tablename__ = "ability"

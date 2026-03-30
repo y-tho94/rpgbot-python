@@ -146,6 +146,11 @@ class MonsterService:
                 "Error": "Insufficient AP"    
             }
 
+        if ability.Description == "Gain the innate ability to study monsters":
+            return {
+                "Error": "This ability cannot be used in combat. Use the $Study command"
+            }
+
         #deplete AP by cost
         ch.CurrentAP -= ability.Cost
         
@@ -449,11 +454,11 @@ class MonsterService:
                 summary.append(f"{ch.Name} also received {item.Name}!")
             else:
                 specialLootDrop = random.choice(monsterLoot.SpecialLoot)
-                item = await self.lootService.GenerateSpecialLootByName(specialLootDrop)
+                item = await self.lootService.GenerateLootByName(specialLootDrop)
                 summary.append(f"{ch.Name} also received a rare {item.Name}!")
             if len(monsterLoot.RaidLoot) > 0:
                 raidLootDrop = random.choice(monsterLoot.RaidLoot)
-                item = await self.lootService.GenerateRaidLootByName(raidLootDrop)
+                item = await self.lootService.GenerateLootByName(raidLootDrop)
                 summary.append(f"{ch.Name} also received a legendary {item.Name}!")
 
             ch.Inventory.Stored.append(item)

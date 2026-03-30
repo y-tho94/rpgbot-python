@@ -45,7 +45,7 @@ class MerchantService():
             continue
 
         for _ in range(3):
-            special = await self.lootService.GenerateSpecialLoot()
+            special = await self.lootService.GenerateLoot("Uncommon")
             specialWare = Wares()
             specialWare.Item = special
             specialWare.Value = self.AppraiseItem(special)

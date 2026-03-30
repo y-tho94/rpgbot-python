@@ -1,5 +1,5 @@
 from calendar import c
-from models.character import Character, Inventory
+from models.character import Buffs, Character, Inventory
 from models.loot import Loot
 from data.dataContext import Context, CharacterTable
 from services.cacheService import SimpleCache
@@ -50,7 +50,7 @@ class CharacterService():
 
     async def GetCharacter(self, player:str):
         session = Session(bind=self.db)
-        statement = select(CharacterTable).filter_by(playerName=player)
+        statement = select(CharacterTable).filter_by(playerName=player, isDead=0)
         charObj = session.execute(statement).scalars().first()
         session.close()
 
@@ -190,7 +190,7 @@ class CharacterService():
         
         
         ch.Inventory.XP -= ch.NextXPtoLevel
-
+        ch.Buffs = Buffs()
         ch.deriveStats()
         ch.calcMaxHPandAP()
 
@@ -201,12 +201,12 @@ class CharacterService():
         }
 
     async def KillCharacter(self, player:str):
-        self.cache.delete(player)
 
         session = Session(bind = self.db)
-        statement = delete(CharacterTable).where(CharacterTable.playerName==player)
+        statement = update(CharacterTable).where(CharacterTable.playerName==player).values(isDead = 1)
         session.execute(statement)
         session.commit()
+        session.close()
 
-    
-    
+        self.cache.delete(player)
+        
