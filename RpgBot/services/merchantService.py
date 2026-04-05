@@ -21,12 +21,15 @@ class MerchantService():
         scrollMerchant = self.cache.get("Scroll Merchant")
         if scrollMerchant is None:
             await self.CreateScrollMerchant()
-
+        
+        pawnMerchant = self.cache.get("Pawn Merchant")
+        if pawnMerchant is None:
+            self.cache.set("Pawn Merchant", Merchant())
         return
 
     async def CreateMerchant(self):
         merchant = Merchant()
-        for _ in range(3):
+        for _ in range(6):
             item = await self.lootService.GenerateLoot()
             ware = Wares()
             ware.Item = item
@@ -35,7 +38,7 @@ class MerchantService():
             merchant.Inventory.Wares.append(ware)
             continue
 
-        for _ in range(4):
+        for _ in range(8):
             item = await self.lootService.GenerateLootByType("Consumable")
             ware = Wares()
             ware.Item = item
@@ -44,13 +47,15 @@ class MerchantService():
             merchant.Inventory.Wares.append(ware)
             continue
 
-        for _ in range(3):
+        for _ in range(6):
             special = await self.lootService.GenerateLoot("Uncommon")
             specialWare = Wares()
             specialWare.Item = special
             specialWare.Value = self.AppraiseItem(special)
+
             merchant.Inventory.Wares.append(specialWare)
-        
+            continue
+
         merchant.Inventory.checkInventoryForDuplicates()
         self.cache.set("Wandering Merchant", merchant)
         return
@@ -157,7 +162,7 @@ class MerchantService():
 
     async def SellItem(self, playerName:str, itemName:str):
         ch = self.cache.get(playerName)
-        merchant = self.cache.get("Wandering Merchant")
+        merchant = self.cache.get("Pawn Merchant")
 
         if len(merchant.Inventory.Wares) >= 20:
             return {
@@ -179,7 +184,7 @@ class MerchantService():
                     ch.Inventory.Stored.remove(itemToSell[0])
                 else:
                     itemTokens[-1] = str(amount)
-                    itemToSell[0].Name = " ".join(itemTokens)
+                    itemToSell[0].Name = " ".join(itemTokens[:-1])
             except:
                 ch.Inventory.Stored.remove(itemToSell[0])
         else:

@@ -235,7 +235,7 @@ class InventoryCog(commands.Cog):
         elif channel in self.dungeonChatList:
             for i in range(len(self.dungeonChatList)):
                 if channel == self.dungeonChatList[i]:
-                    monster = self.monsterCache.get(i-1, target)
+                    monster = self.monsterCache.get(i, target)
                     if monster is not None:
                         response = await self.monsterService.UseItem(player, monster, itemName, i)
                         await ctx.reply(json.dumps(response, indent=4))

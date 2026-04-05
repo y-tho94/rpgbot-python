@@ -19,19 +19,19 @@ class MerchantCog(commands.Cog):
         return
 
     @commands.command(breif="Show Merchant inventory", aliases=["Merchant"])
-    async def ShowMerchant(self, ctx, *, merchantName="Wandering Merchant"):
+    async def ShowMerchant(self, ctx, *, merchantName="Wandering"):
         await self.merchantService.GetSetMerchant()
 
-        retval = await self.merchantService.ShowMerchantInventory(merchantName)
+        retval = await self.merchantService.ShowMerchantInventory(f"{merchantName} Merchant")
         await ctx.reply(json.dumps(retval, indent=4))
 
     @commands.command(brief="Describe item in merchant inventory", aliases=["DescM"])
-    async def DescribeMerchant(self, ctx, *, itemName:str=""):
+    async def DescribeMerchant(self, ctx, itemName:str="", merchantName:str="Wandering"):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item name given to describe")
             return
         await self.merchantService.GetSetMerchant()
-        merchant = self.cache.get("Wandering Merchant")
+        merchant = self.cache.get(f"{merchantName} Merchant")
         itemList = list(filter(lambda i: i.Item.Name == itemName, merchant.Inventory.Wares))
         if len(itemList) == 0:
             await ctx.reply(f"No item named {itemName} in merchant inventory")
@@ -60,7 +60,7 @@ class MerchantCog(commands.Cog):
         await ctx.reply(f"Your item is worth {itemVal} Gold. The merchant will buy it for {sellVal} Gold")
 
     @commands.command(brief="Buy item from merchant")
-    async def Buy(self, ctx, itemName:str, merchantName:str="Wandering Merchant"):
+    async def Buy(self, ctx, itemName:str, merchantName:str="Wandering"):
         if len(itemName.strip()) == 0:
             await ctx.reply("No item name given to buy")
             return
@@ -68,7 +68,7 @@ class MerchantCog(commands.Cog):
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
 
-        response = await self.merchantService.BuyItem(player, itemName, merchantName)
+        response = await self.merchantService.BuyItem(player, itemName, f"{merchantName} Merchant")
         if response is not None:
             await ctx.reply(json.dumps(response, indent=4))
             return
@@ -91,7 +91,7 @@ class MerchantCog(commands.Cog):
             await ctx.reply(json.dumps(response, indent=4))
             return
 
-        await ctx.reply(f"You sold {itemName} to the shop")
+        await ctx.reply(f"You sold {itemName} to the pawn shop")
         channel = self.bot.get_channel(self.generalChatID)
         await channel.send(f"{ctx.author.mention} sold {itemName} to the shop")
 

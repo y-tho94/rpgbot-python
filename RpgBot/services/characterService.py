@@ -87,7 +87,7 @@ class CharacterService():
         return
 
     async def SaveCharacters(self):
-        allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant"})
+        allActivePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant", "Pawn Merchant"})
 
         for player in allActivePlayers:
             ch = self.cache.get(player) or Character()

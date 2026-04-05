@@ -27,7 +27,7 @@ class TasksCog(commands.Cog):
 
     @tasks.loop(hours=8)
     async def ClearCache(self):
-        activePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant"})
+        activePlayers = list(self.cache.cache.keys() - {"Wandering Merchant", "Scroll Merchant", "Pawn Merchant"})
 
         for player in activePlayers:
             ch = self.cache.get(player)
@@ -49,6 +49,7 @@ class TasksCog(commands.Cog):
         try:
             self.cache.delete("Wandering Merchant")
             self.cache.delete("Scroll Merchant")
+            self.cache.delete("Pawn Merchant")
         except:
             pass
 
