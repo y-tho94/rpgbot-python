@@ -164,13 +164,26 @@ class MerchantService():
                 "Error": "No more room in merchant inventory"
             }
 
-        itemToSell = list(filter(lambda i: i.Name == itemName, ch.Inventory.Stored))
+        itemToSell = list(filter(lambda i: i.Name.startswith(itemName), ch.Inventory.Stored))
         if len(itemToSell) == 0:
             return {
                 "Error": "Item does not exist in player stored inventory"
             }
         
-        ch.Inventory.Stored.remove(itemToSell[0])
+        if itemToSell[0].Type == "Consumable":
+            itemTokens = itemToSell[0].Name.split()
+            try:
+                amount = int(itemTokens[-1])
+                amount -= 1
+                if amount == 0:
+                    ch.Inventory.Stored.remove(itemToSell[0])
+                else:
+                    itemTokens[-1] = str(amount)
+                    itemToSell[0].Name = " ".join(itemTokens)
+            except:
+                ch.Inventory.Stored.remove(itemToSell[0])
+        else:
+            ch.Inventory.Stored.remove(itemToSell[0])
         
         itemVal = self.AppraiseItem(itemToSell[0])
 

@@ -1,6 +1,6 @@
 import discord
 from discord.ext import tasks, commands
-from services.cacheService import SimpleCache
+from services.cacheService import MonsterCache, SimpleCache
 from services.monsterservice import MonsterService
 from services.characterService import CharacterService
 from services.inventoryService import InventoryService
@@ -8,7 +8,7 @@ import json
 import os
 
 class InventoryCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, inventoryService:InventoryService, characterService:CharacterService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:MonsterCache, inventoryService:InventoryService, characterService:CharacterService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.inventoryService = inventoryService
@@ -16,7 +16,9 @@ class InventoryCog(commands.Cog):
         self.monsterCache = monsterCache
         self.monsterService = monsterService
         self.generalChatId = int(os.getenv("GENERAL_CHANNEL_ID"))
-        self.dungeonChatId = int(os.getenv("DUNGEON_CHANNEL_ID"))
+        self.dungeonChatId = int(os.getenv("DUNGEON_CHANNEL_ID_FLOOR_1"))
+        self.dungeonChatsDict = {k: v for k,v in os.environ.items() if "DUNGEON_CHANNEL" in k}
+        self.dungeonChatList = [int(c) for c in self.dungeonChatsDict.values()]
 
     @commands.command(brief="Show inventory", aliases=["ShowInv"])
     async def ShowInventory(self, ctx):
@@ -218,6 +220,7 @@ class InventoryCog(commands.Cog):
             await ctx.reply("No item name given")
             return
 
+        channel = ctx.channel.id
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
         if target == "self":
@@ -229,11 +232,13 @@ class InventoryCog(commands.Cog):
             await self.characterService.GetSetChar(target.name)
             response = await self.inventoryService.UseItem(player, target.name, itemName)
             await ctx.reply(json.dumps(response, indent=4))
-        else:
-            monster = self.monsterCache.get(target)
-            if monster is not None:
-                response = await self.monsterService.UseItem(player, monster, itemName)
-                await ctx.reply(json.dumps(response, indent=4))
+        elif channel in self.dungeonChatList:
+            for i in range(len(self.dungeonChatList)):
+                if channel == self.dungeonChatList[i]:
+                    monster = self.monsterCache.get(i-1, target)
+                    if monster is not None:
+                        response = await self.monsterService.UseItem(player, monster, itemName, i)
+                        await ctx.reply(json.dumps(response, indent=4))
 
         await self.inventoryService.DiscardItem(player, itemName)
         return

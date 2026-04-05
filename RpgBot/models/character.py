@@ -1,3 +1,4 @@
+from copy import deepcopy
 import random
 import time
 import math
@@ -145,7 +146,7 @@ class Character:
         self.MaxAP = 10 + (intMod if intMod > fthMod else fthMod)
         self.Evasion = 10 + dexMod + luckMod
         maxinvraw = self.Strength if self.Strength > self.Intelligence else self.Intelligence
-        self.MaxInventory = maxinvraw if maxinvraw <= 30 else 30
+        self.MaxInventory = maxinvraw if maxinvraw <= 11 else 11
         maxabraw = 10 + (fthMod if fthMod > intMod else intMod)
         self.MaxAbilities = maxabraw if maxabraw <= 20 else 20
         self.CritChance = self.Luck + fthMod
@@ -235,8 +236,33 @@ class Inventory():
     @staticmethod
     def dedupe(items:list):
         for item in items:
-            #don't rename consumables, since they can be stacked and the name is less important
+            #stack consumables without renaming
             if item.Type == "Consumable":
+                itemNameRaw = item.Name
+                itemCount = 0
+                itemNameTokens = itemNameRaw.split()
+                
+                try:
+                    #gets number of items in stack if name ends with number                    
+                    itemCount = int(itemNameTokens[-1])
+                    itemName = " ".join(itemNameTokens[:-1])
+                    #count other items with the same name and add count to end of name
+                    itemCount += len(list(filter(lambda i: i.Name == itemName, items)))
+                    item.Name = f"{itemName} {itemCount}"
+                    #remove items with the same name but different count
+                    duplicates = list(filter(lambda i: i.Name.startswith(itemName), items))
+                    dupsSet = set(duplicates)
+                    items[:] = [i for i in items if i not in dupsSet or i == item]  
+
+                except Exception as e:
+                    #if not, count number of items with the same name and add count to end of name
+                    duplicates = list(filter(lambda i: i.Name == itemNameRaw, items))
+                    itemCount = len(duplicates)
+                    if itemCount > 0:
+                        item.Name += f" {itemCount}"
+                    #remove other items with the same name
+                    dupsSet = set(duplicates)
+                    items[:] = [i for i in items if i not in dupsSet or i == item]  
                 continue
 
             #get list of all items with the same name

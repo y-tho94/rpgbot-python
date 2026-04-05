@@ -145,13 +145,27 @@ class InventoryService():
     async def DiscardItem(self, player:str, itemName:str):
         character = self.cache.get(player) or Character()
 
-        itemToDrop = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
+        itemToDrop = list(filter(lambda i: i.Name.startswith(itemName), character.Inventory.Stored))
         if len(itemToDrop) == 0:
             return {
                 "Error": "No item of that name in inventory"    
             }
 
-        character.Inventory.Stored.remove(itemToDrop[0])
+        if itemToDrop[0].Type == "Consumable":
+            itemTokens = itemToDrop[0].Name.split()
+            try:
+                amount = int(itemTokens[-1])
+                amount -= 1
+                if amount == 0:
+                    character.Inventory.Stored.remove(itemToDrop[0])
+                else:
+                    itemTokens[-1] = str(amount)
+                    itemToDrop[0].Name = " ".join(itemTokens)
+            except:
+                character.Inventory.Stored.remove(itemToDrop[0])
+        else:
+            character.Inventory.Stored.remove(itemToDrop[0])
+        
         character.Inventory.checkInventoryForDuplicates()
 
         session = Session(bind = self.db)
@@ -276,6 +290,12 @@ class InventoryService():
                 "Error": "No item of that name in stored inventory"    
             }
 
+        itemType = itemToRename[0].Type
+        if itemType == "Consumable":
+            return {
+                "Error": "Consumable items cannot be renamed"
+            }
+
         itemToRename[0].Name = newItemName
         character.Inventory.checkInventoryForDuplicates()
 
@@ -294,7 +314,7 @@ class InventoryService():
         character = self.cache.get(player) or Character()
         targetCh = self.cache.get(target) or Character()
 
-        itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
+        itemToUse = list(filter(lambda i: i.Name.startswith(itemName), character.Inventory.Stored))
         if len(itemToUse) == 0:
             return {
                 "Error": f"No item '{itemName}' in stored inventory"    

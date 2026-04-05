@@ -9,18 +9,16 @@ from cogs.tasks import TasksCog
 from data.dataContext import Context
 from services.abilityService import AbilityService
 from services.characterService import CharacterService
-from services.cacheService import SimpleCache
+from services.cacheService import MonsterCache, SimpleCache
 from services.combatService import CombatService
 from services.inventoryService import InventoryService
 from services.lootService import LootService
 from services.merchantService import MerchantService
 from services.monsterservice import MonsterService
-import json
 import os
 from dotenv import load_dotenv
 import discord
-from discord.ext import commands, tasks
-import datetime
+from discord.ext import commands
 
 if __name__ == '__main__':
     load_dotenv()
@@ -29,7 +27,7 @@ if __name__ == '__main__':
     #Dependency injection and startup services
     db = Context()
     cache = SimpleCache()
-    monsterCache = SimpleCache()
+    monsterCache = MonsterCache()
     systemCache = SimpleCache()
     lootService = LootService(db=db, systemCache=systemCache)
     characterService = CharacterService(db=db, cache=cache, lootService=lootService)

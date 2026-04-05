@@ -2,7 +2,7 @@ from discord.ext import commands
 import discord
 from services.monsterservice import MonsterService
 from models.character import Character
-from services.cacheService import SimpleCache
+from services.cacheService import MonsterCache, SimpleCache
 from services.characterService import CharacterService
 from services.abilityService import AbilityService
 from services.lootService import LootService
@@ -12,7 +12,7 @@ import json
 import os
 
 class AdminCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, systemCache:SimpleCache, characterService:CharacterService, abilityService:AbilityService, lootService:LootService, inventoryService:InventoryService, merchantService:MerchantService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:MonsterCache, systemCache:SimpleCache, characterService:CharacterService, abilityService:AbilityService, lootService:LootService, inventoryService:InventoryService, merchantService:MerchantService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.monsterCache = monsterCache
@@ -25,7 +25,9 @@ class AdminCog(commands.Cog):
         self.monsterService = monsterService
 
         self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
-        self.dungeonChatID = int(os.getenv("DUNGEON_CHANNEL_ID"))
+        self.dungeonChatID = int(os.getenv("DUNGEON_CHANNEL_ID_FLOOR_1"))
+        self.dungeonChatsDict = {k: v for k,v in os.environ.items() if "DUNGEON_CHANNEL" in k}
+        self.dungeonChatList = [int(c) for c in self.dungeonChatsDict.values()]
         return
 
     @commands.command(hidden=True)
@@ -99,12 +101,13 @@ class AdminCog(commands.Cog):
         
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
-    async def AdminSpawnMonster(self, ctx):
+    async def AdminSpawnMonster(self, ctx, floor:int):
         
-        monster = await self.monsterService.GetMobMonster()
+        monster = await self.monsterService.GetMobMonster(floor)
 
         await ctx.reply(f"{monster.Name} has been spawned in the dungeon")
-        channel = self.bot.get_channel(self.dungeonChatID)
+        
+        channel = self.bot.get_channel(int(self.dungeonChatsDict[f"DUNGEON_CHANNEL_ID_FLOOR_{floor}"]))
         await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
 
     @commands.command(hidden=True)

@@ -1,12 +1,12 @@
 import discord
 from discord.ext import tasks, commands
-from services.cacheService import SimpleCache
+from services.cacheService import SimpleCache, MonsterCache
 from services.characterService import CharacterService
 from services.monsterservice import MonsterService
 import os
 
 class TasksCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, systemCache:SimpleCache, characterService:CharacterService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:MonsterCache, systemCache:SimpleCache, characterService:CharacterService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.monsterCache = monsterCache
@@ -14,7 +14,8 @@ class TasksCog(commands.Cog):
         self.characterService = characterService
         self.monsterService = monsterService
         self.generalChatID = int(os.getenv("GENERAL_CHANNEL_ID"))
-        self.dungeonChatID = int(os.getenv("DUNGEON_CHANNEL_ID"))
+        self.dungeonChatsDict = {k: v for k,v in os.environ.items() if "DUNGEON_CHANNEL" in k}
+        self.dungeonChatList = [int(c) for c in self.dungeonChatsDict.values()]
 
         self.ClearCache.start()
         self.ClearMerchant.start()
@@ -58,39 +59,38 @@ class TasksCog(commands.Cog):
 
     @tasks.loop(minutes=15)
     async def SummonMobMonster(self):
-        channel = self.bot.get_channel(self.dungeonChatID)
-        for _ in range(10):
-            try:
-                monster = await self.monsterService.GetMobMonster(1)
-                if monster is not None:
-                    await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
-            except Exception as e:
-                await channel.send(e)
-                break;
-        for _ in range(10):
-            try:
-                monster = await self.monsterService.GetMobMonster(2)
-                if monster is not None:
-                    await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
-            except Exception as e:
-                await channel.send(e)
-                break;
+        await self.SummonMobMons(1)
+        await self.SummonMobMons(2)
+        await self.SummonMobMons(3)
         return
+
+    async def SummonMobMons(self, floor:int):
+        channelId = int(self.dungeonChatsDict[f"DUNGEON_CHANNEL_ID_FLOOR_{floor}"])
+        channel = self.bot.get_channel(channelId)
+        for _ in range(10):
+            try:
+                monster = await self.monsterService.GetMobMonster(floor)
+                if monster is not None:
+                    await channel.send(f"A wild {monster.Name} has appeared in the dungeon!")
+            except Exception as e:
+                await channel.send(e)
+                break;
+
 
     @tasks.loop(hours=1)
     async def SummonRaidMonster(self):
-        channel = self.bot.get_channel(self.dungeonChatID)
-        try:
-            monster = await self.monsterService.GetRaidMonster(1)
-            if monster is not None:
-                await channel.send(f"A raid monster {monster.Name} has appeared in the dungeon!")
-        except Exception as e:
-            await channel.send(e)
-
-        try:
-            monster = await self.monsterService.GetRaidMonster(2)
-            if monster is not None:
-                await channel.send(f"A raid monster {monster.Name} has appeared in the dungeon!")
-        except Exception as e:
-            await channel.send(e)
+        await self.SummonRaidMons(1)
+        await self.SummonRaidMons(2)
+        await self.SummonRaidMons(3)
         return
+
+    async def SummonRaidMons(self, floor:int):
+        channelId = int(self.dungeonChatsDict[f"DUNGEON_CHANNEL_ID_FLOOR_{floor}"])
+        channel = self.bot.get_channel(channelId)
+        
+        try:
+            monster = await self.monsterService.GetRaidMonster(floor)
+            if monster is not None:
+                await channel.send(f"A raid monster {monster.Name} has appeared in the dungeon!")
+        except Exception as e:
+            await channel.send(e)

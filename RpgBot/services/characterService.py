@@ -36,7 +36,8 @@ class CharacterService():
                 intelligence = chTable.intelligence,
                 faith = chTable.faith,
                 luck = chTable.luck,
-                inventory = chTable.inventory 
+                inventory = chTable.inventory,
+                isDead = 0
             )
             session.execute(statement)
         session.commit()
@@ -77,7 +78,8 @@ class CharacterService():
             intelligence = chTable.intelligence,
             faith = chTable.faith,
             luck = chTable.luck,
-            inventory = chTable.inventory 
+            inventory = chTable.inventory,
+            isDead = 0
         )
         session.execute(statement)
         session.commit()
@@ -101,7 +103,8 @@ class CharacterService():
                 intelligence = chTable.intelligence,
                 faith = chTable.faith,
                 luck = chTable.luck,
-                inventory = chTable.inventory 
+                inventory = chTable.inventory,
+                isDead = 0
             )
             session.execute(statement)
             session.commit()

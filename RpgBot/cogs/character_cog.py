@@ -91,13 +91,9 @@ class CharacterCog(commands.Cog):
         await ctx.reply(json.dumps(response, indent=4))
         return
 
-    def isGeneralChannel(self, ctx):
-        return ctx.channel.id == self.generalChatId
-
     #This command lets players rest at the inn to restore their HP and AP to full. It can only be used in the general channel
-    @commands.command(brief="Rest at the inn to restore HP and AP to full. Can only be used in the general channel", aliases=["Rest"])
-    @commands.cooldown(1, 1800, commands.BucketType.user) # .5 hour cooldown per user
-    @commands.check(isGeneralChannel)
+    @commands.command(brief="Rest at the inn to restore HP and AP to full", aliases=["Rest"])
+    @commands.cooldown(2, 1800, commands.BucketType.user) # twice per .5 hour cooldown per user
     async def RestAtInn(self, ctx):        
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
@@ -105,7 +101,3 @@ class CharacterCog(commands.Cog):
         response = await self.characterService.RestCharacter(player)
         await ctx.reply(json.dumps(response, indent=4))
 
-    @RestAtInn.error
-    async def RestAtInnError(self, ctx, error):
-        if isinstance(error, commands.CheckFailure):
-            await ctx.reply("You can only rest at the inn in the general channel")

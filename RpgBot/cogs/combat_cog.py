@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from services.cacheService import SimpleCache
+from services.cacheService import MonsterCache, SimpleCache
 from services.characterService import CharacterService
 from services.abilityService import AbilityService
 from services.combatService import CombatService
@@ -9,7 +9,7 @@ import json
 import os
 
 class CombatCog(commands.Cog):
-    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:SimpleCache, combatService:CombatService, characterService:CharacterService, abilityService:AbilityService, monsterService:MonsterService):
+    def __init__(self, bot:commands.Bot, cache:SimpleCache, monsterCache:MonsterCache, combatService:CombatService, characterService:CharacterService, abilityService:AbilityService, monsterService:MonsterService):
         self.bot = bot
         self.cache = cache
         self.monsterCache = monsterCache
@@ -18,13 +18,14 @@ class CombatCog(commands.Cog):
         self.abilityService = abilityService
         self.monsterService = monsterService
         self.genChatId = int(os.getenv("GENERAL_CHANNEL_ID"))
-        self.dungeonChatId = int(os.getenv("DUNGEON_CHANNEL_ID"))
+        self.dungeonChatsDict = {k: v for k,v in os.environ.items() if "DUNGEON_CHANNEL" in k}
+        self.dungeonChatList = [int(c) for c in self.dungeonChatsDict.values()]
         return
 
     @commands.command(brief="Initiate Combat")
     async def Attack(self, ctx, *, targetName:str=""):
         channelId = ctx.channel.id
-        if channelId != self.genChatId and channelId != self.dungeonChatId:
+        if channelId != self.genChatId and channelId not in self.dungeonChatList:
             await ctx.reply("This command is only valid in the general channel or the dungeon")
             return
 
@@ -40,20 +41,23 @@ class CombatCog(commands.Cog):
 
             response = await self.combatService.DoPvPCombat(player, target.name)
             await ctx.reply(json.dumps(response, indent=4))
-        if channelId == self.dungeonChatId:
-            targetMon = self.monsterCache.get(targetName)
-            if targetMon is None:
-                await ctx.reply(f"{targetName} is not a valid monster in this dungeon")
-                return
+        if channelId in self.dungeonChatList:
+            for i in range(len(self.dungeonChatList)):
+                if channelId == self.dungeonChatList[i]:
+                    targetMon = self.monsterCache.get(i, targetName)
+                    if targetMon is None:
+                        await ctx.reply(f"{targetName} is not a valid monster in this dungeon")
+                        return
 
-            response = await self.monsterService.MonsterCombat(player, targetName)
-            await ctx.reply(json.dumps(response, indent=4))
+                    response = await self.monsterService.MonsterCombat(player, targetName, i)
+                    await ctx.reply(json.dumps(response, indent=4))
+                    return
         return
 
     @commands.command(brief="Use an ability on a target")
     async def Cast(self, ctx, abilityName, targetName:str="self"):
         channelId = ctx.channel.id
-        if channelId != self.genChatId and channelId != self.dungeonChatId:
+        if channelId != self.genChatId and channelId not in self.dungeonChatList:
             await ctx.reply("This command is only valid in the general channel or the dungeon")
             return
 
@@ -82,26 +86,30 @@ class CombatCog(commands.Cog):
             response = await self.combatService.UseAbilityPvP(player, target.name, abilityName)
             await ctx.reply(json.dumps(response, indent=4))
 
-        elif channelId == self.dungeonChatId:
-            targetMon = self.monsterCache.get(targetName)
-            if targetMon is None:
-                await ctx.reply(f"{targetName} is not a valid monster in this dungeon")
-                return
-            response = await self.monsterService.UseAbility(player, targetName, abilityName)
-            await ctx.reply(json.dumps(response, indent=4))
+        elif channelId in self.dungeonChatList:
+            for i in range(len(self.dungeonChatList)):
+                if channelId == self.dungeonChatList[i]:
+                    targetMon = self.monsterCache.get(i, targetName)
+                    if targetMon is None:
+                        await ctx.reply(f"{targetName} is not a valid monster in this dungeon")
+                        return
+                    response = await self.monsterService.UseAbility(player, targetName, abilityName, i)
+                    await ctx.reply(json.dumps(response, indent=4))
+                    return
 
         return
 
     @commands.command(brief="Flee from combat")
     async def Disengage (self, ctx, *, monsterName:str):
         channelId = ctx.channel.id
-        if channelId != self.dungeonChatId:
+        if channelId not in self.dungeonChatList:
             await ctx.reply("This command is only valid in the dungeon")
             return
 
-        if channelId == self.dungeonChatId:
-            monster = self.monsterCache.get(monsterName)
+        for i in range(len(self.dungeonChatList)):
+            if channelId == self.dungeonChatList[i]:
+                monster = self.monsterCache.get(i, monsterName)
 
-            response = await self.monsterService.FleeCombat(ctx.author.name, monster)
-            await ctx.reply(json.dumps(response, indent=4))
-            return
+                response = await self.monsterService.FleeCombat(ctx.author.name, monster)
+                await ctx.reply(json.dumps(response, indent=4))
+                return
