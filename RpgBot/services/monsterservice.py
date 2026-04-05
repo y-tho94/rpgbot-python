@@ -375,7 +375,7 @@ class MonsterService:
     async def UseItem(self, player:str, monster:Monster, itemName:str, floorIndex:int):
         ch = self.cache.get(player) or Character()
         
-        itemToUse = list(filter(lambda i: i.Name == itemName, ch.Inventory.Stored))
+        itemToUse = list(filter(lambda i: i.Name.startswith(itemName), ch.Inventory.Stored))
         if len(itemToUse) == 0:
             return {
                 "Error": "No item of that name in stored inventory"    
