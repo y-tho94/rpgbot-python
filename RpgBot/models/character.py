@@ -35,7 +35,9 @@ class Character:
 
         self.Weakness = []
         self.Resistance = []
+
         #inventory
+        self.InventoryCap = 16
         self.Inventory = Inventory()
         self.Buffs = Buffs()
 
@@ -146,7 +148,7 @@ class Character:
         self.MaxAP = 10 + (intMod if intMod > fthMod else fthMod)
         self.Evasion = 10 + dexMod + luckMod
         maxinvraw = self.Strength if self.Strength > self.Intelligence else self.Intelligence
-        self.MaxInventory = maxinvraw if maxinvraw <= 11 else 11
+        self.MaxInventory = maxinvraw if maxinvraw <= self.InventoryCap else self.InventoryCap
         maxabraw = 10 + (fthMod if fthMod > intMod else intMod)
         self.MaxAbilities = maxabraw if maxabraw <= 20 else 20
         self.CritChance = self.Luck + fthMod
