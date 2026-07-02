@@ -189,7 +189,7 @@ class InventoryService():
             return {
                 "Error": "Insufficient gold to give"    
             }
-        elif amount <= 0:
+        if amount <= 0:
             return {
                 "Error": "Can not give less than 1 gold"
             }
