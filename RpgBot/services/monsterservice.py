@@ -257,7 +257,7 @@ class MonsterService:
         if effectType in monster.Resistance:
             inflictAmount = inflictAmount // 2
 
-        damageTaken = inflictAmount - monster.DamageReduction if inflictAmount - monster.DamageReduction > 0 else 0
+        damageTaken = inflictAmount // monster.DamageReduction if inflictAmount // monster.DamageReduction > 0 else 0
 
         #apply heal and damage to target
         newHP = monster.HP + healAmount - damageTaken
@@ -339,7 +339,7 @@ class MonsterService:
             if ch.CritChance >= critChance:
                 attackDmg *= 2
                 attackSummary += "critically "
-            damageTot = attackDmg - monster.DamageReduction
+            damageTot = attackDmg // monster.DamageReduction
             damageReal = damageTot if damageTot > 0 else 0
             monster.HP -= damageReal
 
@@ -605,7 +605,7 @@ class MonsterService:
             if monster.CritChance >= critChance:
                 attackDmgMon *= 2
                 attackSummaryMon += "critically "
-            damageTotMon = attackDmgMon - ch.DamageReduction
+            damageTotMon = attackDmgMon // ch.DamageReduction
             damageRealMon = damageTotMon if damageTotMon > 0 else 0
             ch.CurrentHP -= damageRealMon
 

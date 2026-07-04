@@ -144,7 +144,7 @@ class Character:
         self.Level = self.Strength + self.Dexterity + self.Endurance + self.Intelligence + self.Faith + self.Luck 
         self.NextXPtoLevel = self.calcXpToLevel()
         self.AttackRating = strMod if strMod > dexMod else dexMod
-        self.MaxHP = (10 + endMod) * 2 
+        self.MaxHP = (10 + endMod)
         self.MaxAP = 10 + (intMod if intMod > fthMod else fthMod)
         self.Evasion = 10 + dexMod + luckMod
         maxinvraw = self.Strength if self.Strength > self.Intelligence else self.Intelligence
