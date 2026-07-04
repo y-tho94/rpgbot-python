@@ -4,4 +4,5 @@
     "git-graph.dialog.fetchRemote.pruneTags": true,
     "git-graph.repository.fetchAndPrune": true,
     "git-graph.repository.fetchAndPruneTags": true
+    
 }
