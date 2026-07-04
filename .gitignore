@@ -5,5 +5,5 @@
 /.vs/*
 /.vs
 /.env
-/.vscode
+/.vscode/*
 /.venv
