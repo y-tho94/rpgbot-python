@@ -505,7 +505,7 @@ class MonsterService:
 
         for aiAction in aiActions:
             #check if % of HP is at or below threshold for action
-            if (monsterHP/monsterMaxHP) <= aiAction.HPThreshold / 100:
+            if ((monsterHP/monsterMaxHP) <= aiAction.HPThresholdUpper / 100) and ((monsterHP/monsterMaxHP) >= aiAction.HPThresholdLower / 100):
                 actions = aiAction.Action
                 for action in actions:
                     actionTokens = action.split(" ")
