@@ -223,7 +223,7 @@ class MonsterService:
                 case "AttackRating" | "SpellDamage":
                     monster.AttackRating = 0 if monster.AttackRating - debuffAmount < 0 else monster.AttackRating - debuffAmount
                 case "DamageReduction":
-                    monster.DamageReduction = 1 if monster.DamageReduction - debuffAmount < 1 else monster.DamageReduction - debuffAmount
+                    monster.DamageReduction = 0 if monster.DamageReduction - debuffAmount < 0 else monster.DamageReduction - debuffAmount
                 case "Evasion":
                     monster.Evasion = 0 if monster.Evasion - debuffAmount < 0 else monster.Evasion - debuffAmount
                 case "CritChance":
@@ -257,7 +257,7 @@ class MonsterService:
         if effectType in monster.Resistance:
             inflictAmount = inflictAmount // 2
 
-        damageTaken = inflictAmount // monster.DamageReduction if inflictAmount // monster.DamageReduction > 0 else 0
+        damageTaken = inflictAmount - monster.DamageReduction if inflictAmount - monster.DamageReduction > 0 else 0
 
         #apply heal and damage to target
         newHP = monster.HP + healAmount - damageTaken
@@ -339,7 +339,7 @@ class MonsterService:
             if ch.CritChance >= critChance:
                 attackDmg *= 2
                 attackSummary += "critically "
-            damageTot = attackDmg // monster.DamageReduction
+            damageTot = attackDmg - monster.DamageReduction
             damageReal = damageTot if damageTot > 0 else 0
             monster.HP -= damageReal
 
@@ -440,7 +440,7 @@ class MonsterService:
                         case "AttackRating" | "SpellDamage":
                             monster.AttackRating = 0 if monster.AttackRating - amount < 0 else monster.AttackRating - amount
                         case "DamageReduction":
-                            monster.DamageReduction = 1 if monster.DamageReduction - amount < 1 else monster.DamageReduction - amount
+                            monster.DamageReduction = 0 if monster.DamageReduction - amount < 0 else monster.DamageReduction - amount
                         case "Evasion":
                             monster.Evasion = 0 if monster.Evasion - amount < 0 else monster.Evasion - amount
                         case "CritChance":
@@ -505,7 +505,7 @@ class MonsterService:
 
         for aiAction in aiActions:
             #check if % of HP is at or below threshold for action
-            if ((monsterHP/monsterMaxHP) <= aiAction.HPThresholdUpper / 100) and ((monsterHP/monsterMaxHP) >= aiAction.HPThresholdLower / 100):
+            if (monsterHP/monsterMaxHP) <= aiAction.HPThreshold / 100:
                 actions = aiAction.Action
                 for action in actions:
                     actionTokens = action.split(" ")
@@ -605,7 +605,7 @@ class MonsterService:
             if monster.CritChance >= critChance:
                 attackDmgMon *= 2
                 attackSummaryMon += "critically "
-            damageTotMon = attackDmgMon // ch.DamageReduction
+            damageTotMon = attackDmgMon - ch.DamageReduction
             damageRealMon = damageTotMon if damageTotMon > 0 else 0
             ch.CurrentHP -= damageRealMon
 
