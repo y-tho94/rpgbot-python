@@ -88,6 +88,7 @@ class MonsterAI():
 
 
 class MonsterAIAction():
-    def __init__(self, HPThreshold=0, Action:list=[]):
-        self.HPThreshold = HPThreshold
+    def __init__(self, HPThresholdUpper=0, HPThresholdLower:int=0, Action:list=[]):
+        self.HPThresholdUpper = HPThresholdUpper
+        self.HPThresholdLower = HPThresholdLower
         self.Action = Action

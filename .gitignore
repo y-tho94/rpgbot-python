@@ -4,6 +4,10 @@
 
 /.vs/*
 /.vs
+<<<<<<< HEAD
 /.env
 /.vscode/*
 /.venv
+=======
+/.idea/misc.xml
+>>>>>>> 05c4df368d5ef723d6d06b07b176e79a83b77447

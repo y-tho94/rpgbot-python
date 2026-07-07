@@ -148,7 +148,7 @@ class CombatService():
             inflictAmount = 0
             summary.append(f"{ch.Name} attacked {targetCh.Name} with {ability.Name}, but missed!")
 
-        damageTaken = inflictAmount - targetCh.DamageReduction if inflictAmount - targetCh.DamageReduction > 0 else 0
+        damageTaken = inflictAmount // targetCh.DamageReduction if inflictAmount // targetCh.DamageReduction > 0 else 0
 
         #apply heal and damage to target
         newHP = targetCh.CurrentHP + healAmount - damageTaken
@@ -218,7 +218,7 @@ class CombatService():
                 attackDmg *= 2
                 attackSummary += "critically "
             
-            damageTot = attackDmg - target.DamageReduction
+            damageTot = attackDmg // target.DamageReduction
             damageReal = damageTot if damageTot > 0 else 0
             target.CurrentHP -= damageReal
             attackSummary += f"for {damageReal} {damageType} damage"

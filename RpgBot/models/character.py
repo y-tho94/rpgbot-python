@@ -144,7 +144,7 @@ class Character:
         self.Level = self.Strength + self.Dexterity + self.Endurance + self.Intelligence + self.Faith + self.Luck 
         self.NextXPtoLevel = self.calcXpToLevel()
         self.AttackRating = strMod if strMod > dexMod else dexMod
-        self.MaxHP = (10 + endMod) * 2 
+        self.MaxHP = (10 + endMod)
         self.MaxAP = 10 + (intMod if intMod > fthMod else fthMod)
         self.Evasion = 10 + dexMod + luckMod
         maxinvraw = self.Strength if self.Strength > self.Intelligence else self.Intelligence
@@ -152,7 +152,7 @@ class Character:
         maxabraw = 10 + (fthMod if fthMod > intMod else intMod)
         self.MaxAbilities = maxabraw if maxabraw <= 20 else 20
         self.CritChance = self.Luck + fthMod
-        self.DamageReduction = dexMod + endMod
+        self.DamageReduction = max(1, dexMod + endMod)
         self.SpellDamage = intMod if intMod > fthMod else fthMod
 
         equipped = self.Inventory.Equipped
@@ -178,7 +178,7 @@ class Character:
         maxCCBuff = self.Buffs.CritChance if self.Buffs.CritChance <= self.CritChance * CAP_MULT else self.CritChance * CAP_MULT
 
         self.AttackRating = 0 if self.AttackRating + maxARBuff < 0 else self.AttackRating + maxARBuff
-        self.DamageReduction = 0 if self.DamageReduction + maxDRBuff < 0 else self.DamageReduction + maxDRBuff
+        self.DamageReduction = 1 if self.DamageReduction + maxDRBuff < 0 else self.DamageReduction + maxDRBuff
         self.SpellDamage = 0 if self.SpellDamage + maxSDBuff < 0 else self.SpellDamage + maxSDBuff
         self.MaxHP = 0 if self.MaxHP + maxHPBuff < 0 else self.MaxHP + maxHPBuff
         self.MaxAP = 0 if self.MaxAP + maxAPBuff < 0 else self.MaxAP + maxAPBuff
