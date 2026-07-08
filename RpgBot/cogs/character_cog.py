@@ -19,6 +19,9 @@ class CharacterCog(commands.Cog):
         if len(characterName.strip()) == 0:
             await ctx.reply("Enter a valid name for your character")
             return
+        if len(characterName.strip()) > 32:
+            await ctx.reply("Names can not exceed 32 characters")
+            return 
 
         characterName = characterName.replace("\"", "")
         player = ctx.author.name
