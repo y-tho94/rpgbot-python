@@ -10,6 +10,7 @@ from services.lootService import LootService
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 import random
+import math
 
 
 class MonsterService:
@@ -200,8 +201,8 @@ class MonsterService:
         selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
         inflictAmount = 0 if ability.Effects.Inflict == 0 else ability.Effects.Inflict + modifier
         selfInflictAmount = ability.Effects.SelfInflict
-        boostAmount = 0 if len(ability.Effects.Boost) == 0 else modifier
-        debuffAmount = 0 if len(ability.Effects.Debuff) == 0 else modifier
+        boostAmount = 0 if len(ability.Effects.Boost) == 0 else math.floor(math.log10(modifier) * 5)
+        debuffAmount = 0 if len(ability.Effects.Debuff) == 0 else math.floor(math.log10(modifier) * 5)
 
         #boost stats
         for stat in ability.Effects.Boost:
