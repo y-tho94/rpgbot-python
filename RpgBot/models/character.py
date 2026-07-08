@@ -5,7 +5,6 @@ import math
 from data.dataContext import CharacterTable
 from models.ability import Ability
 from models.loot import Loot
-from collections import defaultdict
 
 class Character:
     #default constructor
@@ -271,13 +270,14 @@ class Inventory():
             #get list of all items with the same name
             duplicates = list(filter(lambda i: i.Name == item.Name, items))
             #if more than one item with the same name...
-
-            # Group items by name and assign incremental numbers
-            name_counts = defaultdict(int)
-            for dup in items:
-                if dup.Name == dupName:
-                    name_counts[dupName] += 1
-                    dup.Name = f"{dupName} ({name_counts[dupName]})"
+            if len(duplicates) > 1:
+                #loop through inventory and rename the item
+                dupName = item.Name
+                dupCount = 0
+                for dup in items:
+                    if dup.Name == dupName:
+                        dup.Name += f" ({dupCount})"
+                        dupCount += 1
         
         return items
 
