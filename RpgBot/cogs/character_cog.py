@@ -65,6 +65,9 @@ class CharacterCog(commands.Cog):
         if len(newName.strip()) == 0:
             await ctx.reply("Enter a valid name for your character")
             return
+        if len(newName.strip()) > 32:
+            await ctx.reply("Names can not exceed 32 characters")
+            return 
         try:
             checkforname = ctx.guild.get_member_named(newName)
             if checkforname is not None and checkforname.id != member.id:
