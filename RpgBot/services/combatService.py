@@ -3,6 +3,7 @@ from models.character import Character
 from services.cacheService import SimpleCache
 import random
 from services.characterService import CharacterService
+import math
 
 class CombatService():
     def __init__(self, cache:SimpleCache, characterService:CharacterService):
@@ -93,8 +94,9 @@ class CombatService():
         selfHealAmount = 0 if ability.Effects.SelfHeal == 0 else ability.Effects.SelfHeal + modifier
         inflictAmount = 0 if ability.Effects.Inflict == 0 else ability.Effects.Inflict + modifier
         selfInflictAmount = ability.Effects.SelfInflict
-        boostAmount = 0 if len(ability.Effects.Boost) == 0 else modifier
-        debuffAmount = 0 if len(ability.Effects.Debuff) == 0 else modifier
+        modifier = max(1, modifier)
+        boostAmount = 0 if len(ability.Effects.Boost) == 0 or modifier <= 0  else math.floor(math.log10(modifier) * 5)
+        debuffAmount = 0 if len(ability.Effects.Debuff) == 0 or modifier <= 0 else math.floor(math.log10(modifier) * 5)
 
         #boost stats
         for stat in ability.Effects.Boost:
