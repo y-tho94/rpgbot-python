@@ -272,21 +272,17 @@ class Inventory():
             #if more than one item with the same name...
             if len(duplicates) > 1:
                 dupName = item.Name
-                dupCount = 0
+                dupCount = 1
                 # ensure the highest "(int)" in each item.Name duplicate is always assigned to dupCount
                 for dup in items:
                     if dup.Name.startswith(dupName) and "(" in dup.Name:
-                        # find a numeric, convert to int
                         num = int(dup.Name.split("(")[-1].rstrip(")"))
-                        # track the highest number in inventory regardless of order
                         dupCount = max(dupCount, num + 1) 
-                        
-                #loop through inventory and rename the item
-                for dup in items:
+
                     if dup.Name == dupName:
                         dup.Name += f" ({dupCount})"
                         dupCount += 1
-        
+
         return items
 
 class Buffs():
