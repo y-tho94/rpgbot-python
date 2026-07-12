@@ -209,5 +209,6 @@ class MerchantService():
         session.close()
 
         self.cache.set(playerName, ch)
-        return
+        return {"Summary": f"You sold {itemToSell[0].Name} to the Pawn Shop"
+        }
 
