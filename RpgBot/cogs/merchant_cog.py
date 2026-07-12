@@ -91,6 +91,5 @@ class MerchantCog(commands.Cog):
             await ctx.reply(json.dumps(response, indent=4))
             return
 
-        #await ctx.reply(f"You sold {itemName} to the pawn shop")
         channel = self.bot.get_channel(self.generalChatID)
         await channel.send(f"{ctx.author.mention} sold {itemName} to the shop")
