@@ -16,8 +16,8 @@ class CharacterTable(Base):
     __tablename__ = "characters"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    playerName = Column(String, nullable=False)
-    charName = Column(String, nullable=False)
+    playerName = Column(String(32), nullable=False)
+    charName = Column(String(32), nullable=False)
     strength = Column(Integer, nullable=False)
     dexterity = Column(Integer, nullable=False)
     endurance = Column(Integer, nullable=False)
@@ -30,19 +30,19 @@ class CharacterTable(Base):
 class LootTable(Base):
     __tablename__ = "loot"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=False)
-    type = Column(String, nullable=False)
+    name = Column(String(32), nullable=False)
+    description = Column(String(1000), nullable=False)
+    type = Column(String(11), nullable=False)
     baseVariance = Column(Integer, nullable=False)
     baseEffects = Column(JSON, nullable=False)
-    rarity = Column(String, nullable=True)
+    rarity = Column(String(11), nullable=True)
 
 class AbilityTable(Base):
     __tablename__ = "ability"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
-    description = Column(String, nullable=False)
-    type = Column(String, nullable=False)
+    name = Column(String(32), nullable=False)
+    description = Column(String(1000), nullable=False)
+    type = Column(String(10), nullable=False)
     cost = Column(Integer, nullable=False)
     baseVariance = Column(Integer, nullable=False)
     baseEffects = Column(JSON, nullable=False)
@@ -51,8 +51,8 @@ class MonsterTable(Base):
     __tablename__ = "monster"
     id = Column(Integer, primary_key=True, autoincrement=True)
     floor = Column(Integer, nullable=True)
-    type = Column(String, nullable=False)
-    name = Column(String, nullable=False)
+    type = Column(String(10), nullable=False)
+    name = Column(String(32), nullable=False)
     weakness = Column(JSON, nullable=False)
     resistance = Column(JSON, nullable=False)
     baseVariance = Column(Integer, nullable=False)
