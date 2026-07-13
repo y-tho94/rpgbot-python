@@ -232,6 +232,7 @@ class InventoryCog(commands.Cog):
                 target = possibleTargetPlayer
                 itemName = " ".join(parts[:-1])
             else: 
+                # the target name has something in it but it isn't a player and isn't self 
                 # TODO: this should probably flip flop with the if statement above to fail early 
                 await ctx.reply("Invalid character name")
                 return
