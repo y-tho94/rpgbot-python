@@ -1,5 +1,3 @@
-import sys
-
 from cogs.ability_cog import AbilityCog
 from cogs.admin_cog import AdminCog
 from cogs.character_cog import CharacterCog
