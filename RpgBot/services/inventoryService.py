@@ -318,8 +318,12 @@ class InventoryService():
         character = self.cache.get(player) or Character()
         targetCh = self.cache.get(target) or Character()
 
-        itemToUse = list(filter(lambda i: i.Name.startswith(itemName), character.Inventory.Stored))
+        # Check for exact match first
+        itemToUse = list(filter(lambda i: i.Name == itemName, character.Inventory.Stored))
         if len(itemToUse) == 0:
+            # If no exact match
+            itemToUse = list(filter(lambda i: i.Name.startswith(itemName), character.Inventory.Stored))
+        else:
             return {
                 "Error": f"No item '{itemName}' in stored inventory"    
             }
