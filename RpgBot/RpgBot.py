@@ -21,7 +21,10 @@ import discord
 from discord.ext import commands
 
 if __name__ == '__main__':
-    load_dotenv()
+    app_env = os.getenv("APP_ENV", "prod")
+    env_file = f".env.{app_env}"
+    print(env_file)
+    load_dotenv(dotenv_path=env_file)
     print('starting...')
     
     #Dependency injection and startup services
