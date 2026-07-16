@@ -96,6 +96,18 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"An error occurred: {e}")
 
+    @bot.event
+    async def on_command_error(ctx, error):
+        commandName = ctx.command.name
+
+        # Cooldowns
+        if isinstance(error, commands.CommandOnCooldown):
+            if commandName == "RestAtInn" or commandName in ctx.command.aliases:
+                minutes = int(error.retry_after / 60)
+                seconds = int(error.retry_after % 60)
+                await ctx.reply(f"You can rest again in {minutes} minutes and {seconds} seconds.")
+            else: pass
+
     #Inventory Management
     
 
