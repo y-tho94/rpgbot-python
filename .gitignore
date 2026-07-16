@@ -13,7 +13,8 @@
 /.vscode/*
 
 /.env
-
+*.env.dev
+*.env.prod
 .env
 *.env.prod
 *.env.dev
