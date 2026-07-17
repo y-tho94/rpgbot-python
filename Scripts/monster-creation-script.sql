@@ -42,6 +42,8 @@ set @DropTable = JSON_OBJECT(
      'SpecialLoot', @DropSpecialLoot
 );
 
+DROP PROCEDURE IF EXISTS create_monster;
+
 DELIMITER //
 CREATE PROCEDURE create_monster()
     BEGIN
@@ -74,6 +76,7 @@ CREATE PROCEDURE create_monster()
         DECLARE EXIT HANDLER FOR SQLEXCEPTION
         BEGIN
             ROLLBACK;
+            RESIGNAL;
         END;
 
         SET MonsterName = @MonsterName;
@@ -139,5 +142,5 @@ CREATE PROCEDURE create_monster()
 DELIMITER ;
 
 CALL create_monster();
-DROP PROCEDURE create_monster;
+DROP PROCEDURE IF EXISTS create_monster;
 
