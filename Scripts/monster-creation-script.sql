@@ -21,14 +21,14 @@ set @DropSpecialLoot = JSON_ARRAY('', '');
 
 -- Set actions for the MonsterAI column (needs work) might be better to remove this section?
 set @AIActionsList = JSON_ARRAY('', '');
-set @AIHPThresholdLower = 0;
-set @AIHPThresholdUpper = 0;
+set @AIHPThresholdLower = 10;
+set @AIHPThresholdUpper = 20;
 
--- Builds MonsterAI column from variables defined above; might be easier to do this manually?
+-- Builds MonsterAI column from variables defined above; might be easier to do this manually? \
 set @MonsterAI = JSON_OBJECT(
     'Actions', JSON_ARRAY(
         JSON_OBJECT(
-            'Action', @AIActionsList,
+            'Action', JSON_EXTRACT(@AIActionsList, '$'),
             'HPThresholdLower', @AIHPThresholdLower,
             'HPThresholdUpper', @AIHPThresholdUpper
         )
@@ -39,9 +39,9 @@ set @MonsterAI = JSON_OBJECT(
 set @DropTable = JSON_OBJECT(
     'XP', @DropXP,
     'Gold', @DropGold,
-    'Loot', @DropLoot,
-    'RaidLoot', @DropRaidLoot,
-    'SpecialLoot', @DropSpecialLoot
+    'Loot', JSON_EXTRACT(@DropLoot, '$'),
+    'RaidLoot', JSON_EXTRACT(@DropRaidLoot, '$'),
+    'SpecialLoot', JSON_EXTRACT(@DropSpecialLoot, '$')
 );
 
 -- Check for procedure and data integrity before inserting, rollback and yell on failure
