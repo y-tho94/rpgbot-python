@@ -1,5 +1,5 @@
 
-
+-- Set base monster values
 set @MonsterName = '';
 set @MonsterType = '';
 set @MonsterFloor = 0;
@@ -12,16 +12,19 @@ set @MonsterCritChance = 0;
 set @MonsterWeakness = JSON_ARRAY('', '');
 set @MonsterResistance = JSON_ARRAY('', '');
 
+-- Set drop values
 set @DropXP = 0;
 set @DropGold = 0;
 set @DropLoot = JSON_ARRAY('', '');
 set @DropRaidLoot = JSON_ARRAY('', '');
 set @DropSpecialLoot = JSON_ARRAY('', '');
 
+-- Set actions for the MonsterAI column (needs work) might be better to remove this section?
 set @AIActionsList = JSON_ARRAY('', '');
 set @AIHPThresholdLower = 0;
 set @AIHPThresholdUpper = 0;
 
+-- Builds MonsterAI column from variables defined above; might be easier to do this manually?
 set @MonsterAI = JSON_OBJECT(
     'Actions', JSON_ARRAY(
         JSON_OBJECT(
@@ -32,6 +35,7 @@ set @MonsterAI = JSON_OBJECT(
     )
 );
 
+-- Builds loot drop column from variables defined above
 set @DropTable = JSON_OBJECT(
     'XP', @DropXP,
     'Gold', @DropGold,
@@ -40,6 +44,7 @@ set @DropTable = JSON_OBJECT(
     'SpecialLoot', @DropSpecialLoot
 );
 
+-- Check for procedure and data integrity before inserting, rollback and yell on failure
 DROP PROCEDURE IF EXISTS create_monster;
 DELIMITER //
 CREATE PROCEDURE create_monster()
