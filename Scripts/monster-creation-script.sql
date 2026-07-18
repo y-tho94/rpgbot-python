@@ -20,31 +20,44 @@ set @DropRaidLoot = JSON_ARRAY('', '');
 set @DropSpecialLoot = JSON_ARRAY('', '');
 
 -- Do not config: Create temporary table to hold monster AI actions
-DROP TEMPORARY TABLE IF EXISTS monsterAIActions;
-CREATE TEMPORARY TABLE monsterAIActions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    actionList JSON,
-    hpThresholdLower INT,
-    hpThresholdUpper INT
-);
+DROP PROCEDURE IF EXISTS create_temp_table;
+DELIMITER //
+CREATE PROCEDURE create_temp_table()
+    BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
+        START TRANSACTION;
+            DROP TEMPORARY TABLE IF EXISTS monsterAIActions;
+            CREATE TEMPORARY TABLE monsterAIActions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                actionList JSON,
+                hpThresholdLower INT,
+                hpThresholdUpper INT
+            );
 
--- Config: Insert AI actions into this table as part of configuration
-INSERT INTO monsterAIActions (actionList, hpThresholdLower, hpThresholdUpper)
-VALUES (JSON_ARRAY(''), 0, 0);
+            -- Config: Insert AI actions into this table as part of configuration
+            INSERT INTO monsterAIActions (actionList, hpThresholdLower, hpThresholdUpper)
+            VALUES (JSON_ARRAY(''), 0, 0);
 
--- Aggregate all data from monsterAIActions into one JSON array of JSON objects, one object for each action/record
-SET @MonsterAIActions = (
-    SELECT JSON_ARRAYAGG(JSON_OBJECT(
-        'Action', JSON_EXTRACT(actionList, '$'),
-        'HPThresholdLower', hpThresholdLower,
-        'HPThresholdUpper', hpThresholdUpper
-    ))
-    FROM monsterAIActions
-    );
+            -- Aggregate all data from monsterAIActions into one JSON array of JSON objects, one object for each action/record
+            SET @MonsterAIActions = (
+                SELECT JSON_ARRAYAGG(JSON_OBJECT(
+                    'Action', JSON_EXTRACT(actionList, '$'),
+                    'HPThresholdLower', hpThresholdLower,
+                    'HPThresholdUpper', hpThresholdUpper
+                ))
+                FROM monsterAIActions
+                );
 
--- Create JSON object containing array of all objects/actions/records from @MonsterAIActions
-SET @MonsterAI = JSON_OBJECT('Actions', COALESCE(JSON_EXTRACT(@MonsterAIActions, '$'), JSON_ARRAY()));
-DROP TEMPORARY TABLE IF EXISTS monsterAIActions;
+            -- Create JSON object containing array of all objects/actions/records from @MonsterAIActions
+            SET @MonsterAI = JSON_OBJECT('Actions', COALESCE(JSON_EXTRACT(@MonsterAIActions, '$'), JSON_ARRAY()));
+            DROP TEMPORARY TABLE IF EXISTS monsterAIActions;
+        COMMIT;
+    END //
+DELIMITER ;
 
 -- Builds loot drop column from variables defined above
 set @DropTable = JSON_OBJECT(
@@ -145,6 +158,8 @@ CREATE PROCEDURE create_monster()
     END//
 DELIMITER ;
 
+CALL create_temp_table();
 CALL create_monster();
+DROP PROCEDURE IF EXISTS create_temp_table;
 DROP PROCEDURE IF EXISTS create_monster;
 
