@@ -44,6 +44,7 @@ SET @MonsterAIActions = (
 
 -- Create JSON object containing array of all objects/actions/records from @MonsterAIActions
 SET @MonsterAI = JSON_OBJECT('Actions', COALESCE(JSON_EXTRACT(@MonsterAIActions, '$'), JSON_ARRAY()));
+DROP TEMPORARY TABLE IF EXISTS monsterAIActions;
 
 -- Builds loot drop column from variables defined above
 set @DropTable = JSON_OBJECT(
