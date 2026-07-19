@@ -66,6 +66,7 @@ class LootService():
             await self.GetSetCache()
             lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
+        # Can't import Ability's GetSetCache() here
         abilityPossibilities = deepcopy(self.systemCache.get("Abilities"))
         if abilityPossibilities is None:
             session = Session(bind=self.db)
@@ -75,11 +76,17 @@ class LootService():
 
             self.systemCache.set("Abilities", abilityPossibilities)
 
-        scrollList = list(filter(lambda i: i.name == "Skill Scroll", lootPossibilities))
+        lootList = list(filter(lambda i: i.name == "Skill Scroll", lootPossibilities))
         abilityList = list(filter(lambda i: i.name == abilityName, abilityPossibilities))
+        # Find ability from ability cache, make scroll a Loot object from loot cache
         ability = abilityList[0]
+        scroll = Loot().fromLootTable(lootList[0])
 
+        # Make ability scroll
+        scroll.Name = f"{ability.name} Scroll"
+        scroll.Effects.Use = f"Learn {ability.name}"
 
+        return scroll
 
 
     async def GenerateLootByType(self, lootType:str, rarity:str="Common"):
