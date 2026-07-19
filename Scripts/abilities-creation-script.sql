@@ -41,6 +41,11 @@ CREATE PROCEDURE create_ability()
         DECLARE SelfHeal INT;
         DECLARE SelfInflict INT;
         DECLARE BaseProperties JSON;
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
 
         SET AbilityName = @AbilityName;
         SET AbilityDescription = @AbilityDescription;
@@ -56,5 +61,12 @@ CREATE PROCEDURE create_ability()
         SET SelfInflict = @SelfInflict;
         SET BaseProperties = @BaseProperties;
 
+        START TRANSACTION;
+            INSERT INTO ability(name, description, type, cost, baseVariance, baseEffects)
+            VALUES (AbilityName, AbilityDescription, AbilityType, AbilityCost, AbilityBaseVariance, BaseProperties);
+        COMMIT;
+    END//
+DELIMITER ;
 
-    end //
+CALL create_ability();
+DROP PROCEDURE IF EXISTS create_ability;
