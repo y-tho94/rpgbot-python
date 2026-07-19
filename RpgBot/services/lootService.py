@@ -1,5 +1,6 @@
 from copy import deepcopy
 from data.dataContext import AbilityTable, Context, LootTable
+from models.ability import Ability
 from models.loot import Effect, Loot
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -58,7 +59,28 @@ class LootService():
             lootScroll = await self._generateScroll(loot)
             return lootScroll
         return loot
-    
+
+    async def GenerateScrollByAbilityName(self, abilityName:str):
+        lootPossibilities = deepcopy(self.systemCache.get("Loot"))
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities = deepcopy(self.systemCache.get("Loot"))
+
+        scrollList = list(filter(lambda i: i.name == "Skill Scroll", lootPossibilities))
+
+        abilities = deepcopy(self.systemCache.get("Abilities"))
+        if abilities is None:
+            session = Session(bind=self.db)
+            statement = select(AbilityTable)
+            abilities = session.execute(statement).scalars().all()
+            session.close()
+
+            self.systemCache.set("Abilities", abilities)
+
+
+
+
+
     async def GenerateLootByType(self, lootType:str, rarity:str="Common"):
         lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
