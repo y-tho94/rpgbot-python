@@ -1,11 +1,11 @@
--- Config 1/2: set ability base properties here
-SET @AbilityName = 'test';
-SET @AbilityDescription = 'test';
+-- Config 1/2: set base ability values
+SET @AbilityName = 'Bullseye';
+SET @AbilityDescription = '';
 SET @AbilityType = 'test';
 SET @AbilityCost = 0;
 SET @AbilityBaseVariance = 0;
 
--- Config 2/2: set properties to build baseEffects column here
+-- Config 2/2: Set values to build `baseProperties` JSON object
 SET @Heal = 0;
 SET @Type = 'test';
 SET @Boost = JSON_ARRAY('', '');
