@@ -88,20 +88,20 @@ class AdminCog(commands.Cog):
 
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
-    async def AdminGiveScroll(self, ctx, target:discord.Member, scrollName:str):
+    async def AdminGiveScroll(self, ctx, target:discord.Member, abilityName:str):
         chResponse = await self.characterService.GetSetChar(target.name)
         if chResponse["Error"] != "":
             await ctx.reply(chResponse["Error"])
             return
 
-        scroll = await self.lootService.GenerateScrollByAbilityName(scrollName)
+        scroll = await self.lootService.GenerateScrollByAbilityName(abilityName)
         ch = chResponse["Character"] or Character()
 
         ch.Inventory.Stored.append(scroll)
         ch.Inventory.checkInventoryForDuplicates()
         await self.characterService.SaveCharacter(target.name, ch)
         channel = self.bot.get_channel(self.generalChatID)
-        await channel.send(f"The gods have given {target.mention} {scrollName}")
+        await channel.send(f"The gods have given {target.mention} {abilityName} Scroll")
 
     @commands.command(hidden=True)
     @commands.has_permissions(administrator=True)
