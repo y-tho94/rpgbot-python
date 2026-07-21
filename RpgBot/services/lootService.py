@@ -1,5 +1,6 @@
 from copy import deepcopy
 from data.dataContext import AbilityTable, Context, LootTable
+from models.ability import Ability
 from models.loot import Effect, Loot
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -58,7 +59,36 @@ class LootService():
             lootScroll = await self._generateScroll(loot)
             return lootScroll
         return loot
-    
+
+    async def GenerateScrollByAbilityName(self, abilityName:str):
+        lootPossibilities = deepcopy(self.systemCache.get("Loot"))
+        if lootPossibilities is None:
+            await self.GetSetCache()
+            lootPossibilities = deepcopy(self.systemCache.get("Loot"))
+
+        # Can't import Ability's GetSetCache() here
+        abilityPossibilities = deepcopy(self.systemCache.get("Abilities"))
+        if abilityPossibilities is None:
+            session = Session(bind=self.db)
+            statement = select(AbilityTable)
+            abilityPossibilities = session.execute(statement).scalars().all()
+            session.close()
+
+            self.systemCache.set("Abilities", abilityPossibilities)
+
+        lootList = list(filter(lambda i: i.name == "Skill Scroll", lootPossibilities))
+        abilityList = list(filter(lambda i: i.name == abilityName, abilityPossibilities))
+        # Find ability from ability cache, make scroll a Loot object from loot cache
+        ability = abilityList[0]
+        scroll = Loot().fromLootTable(lootList[0])
+
+        # Only need to change two properties
+        scroll.Name = f"{ability.name} Scroll"
+        scroll.Effects.Use = [f"Learn {ability.name}"]
+
+        return scroll
+
+
     async def GenerateLootByType(self, lootType:str, rarity:str="Common"):
         lootPossibilities = deepcopy(self.systemCache.get("Loot"))
 
