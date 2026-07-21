@@ -68,8 +68,8 @@ class VaultTable(Base):
     __tablename__ = 'vault'
 
     vault_id = Column(Integer, primary_key=True)
-    character_id = Column(Integer, ForeignKey('characters.id'), nullable=False)
+    playerName = Column(Integer, ForeignKey('characters.playerName'), nullable=False)
     inventory = Column(JSON, nullable=False)
 
     def __repr__(self):
-        return f"<Vault(vault_id={self.vault_id}, character_id={self.character_id})>"
+        return f"<Vault(vault_id={self.vault_id}, playerName={self.playerName})>"

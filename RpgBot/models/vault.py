@@ -1,14 +1,27 @@
 from data.dataContext import VaultTable
-from models.character import Inventory
 
 class Vault():
-    def __init__(self, CharacterId:int=0, Inventory:str="{}"):
-        self.CharacterId = CharacterId
+    def __init__(self, PlayerName:str="", Inventory:str="{}"):
+        self.PlayerName = PlayerName
         self.Inventory = Inventory
         return
 
     def to_dict(self):
         return {
-            "CharacterId": self.CharacterId,
+            "PlayerName": self.PlayerName,
             "Inventory": self.Inventory.to_dict
         }
+
+    def ToDataTable(self):
+        vt = VaultTable(
+            character_id = self.PlayerName,
+            inventory = self.Inventory
+        )
+
+        return vt
+
+    def FromDataTable(self, vt:VaultTable):
+        self.PlayerName = vt.character_id
+        self.Inventory = vt.inventory
+
+        return self

@@ -26,14 +26,20 @@ class MerchantInventory():
 
             #if more than one item with the same name...
             if len(duplicates) > 1:
-                #loop through inventory and rename the item
-                dupName = item.Item.Name
-                dupCount = 0
+                dupName = item.Name
+                dupCount = 1
+                # ensure the highest "(int)" in each item.Name duplicate is always assigned to dupCount
+                splitName = ""
                 for dup in wares:
-                    if dup.Item.Name == dupName:
-                        dup.Item.Name += f" ({dupCount})"
+                    splitName = dup.Name.split("|")
+                    if dup.Name.startswith(splitName[0]) and "|" in dup.Name:
+                        dupCount = max(dupCount, int(splitName[-1]) + 1)
+
+                for dup in wares:
+                    if dup.Name == dupName:
+                        dup.Name = f"{splitName[0]} | {dupCount}"
                         dupCount += 1
-                    continue
+
             continue
 
         wares.sort(key=lambda w: w.Item.Name)
