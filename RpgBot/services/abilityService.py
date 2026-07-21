@@ -57,8 +57,8 @@ class AbilityService():
         inv = character.Inventory
 
         return {
-            "AP": f"{character.MaxAP} / {character.CurrentAP}",
-            "Ability": [f"{item.Name} | {item.Cost}" for item in inv.Ability]
+            "AP": f"{character.CurrentAP} / {character.MaxAP}",
+            "Ability": [f"{item.Name} ({item.Cost} AP)" for item in inv.Ability]
         }
 
     async def DescribeAbility(self, ability:Ability):
