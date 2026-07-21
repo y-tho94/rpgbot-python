@@ -456,7 +456,7 @@ class MonsterService:
                 summary = await self.DropLoot(summary, playerInCombat, monster)
             self.monsterCache.delete(floorIndex, monster.Name)
         else:
-            summary = await self.MonsterAIAction(summary, ch, player, monster)
+            summary = await self.MonsterAIAction(summary, ch, player, monster, floorIndex)
 
         return {
             "Summary" : summary    
