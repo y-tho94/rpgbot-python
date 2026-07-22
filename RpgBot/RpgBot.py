@@ -6,6 +6,7 @@ from cogs.dungeon_cog import DungeonCog, DungeonService
 from cogs.inventory_cog import InventoryCog
 from cogs.merchant_cog import MerchantCog
 from cogs.tasks import TasksCog
+from cogs.vault_cog import VaultCog
 from data.dataContext import Context
 from services.abilityService import AbilityService
 from services.characterService import CharacterService
@@ -15,6 +16,7 @@ from services.inventoryService import InventoryService
 from services.lootService import LootService
 from services.merchantService import MerchantService
 from services.monsterservice import MonsterService
+from services.vaultService import VaultService
 import os
 from dotenv import load_dotenv
 import discord
@@ -40,6 +42,7 @@ if __name__ == '__main__':
     combatService = CombatService(cache=cache, characterService=characterService)
     monsterService = MonsterService(db=db, cache=cache, monsterCache=monsterCache, systemCache=systemCache, characterService=characterService, lootService=lootService)
     dungeonService = DungeonService(cache=cache, systemCache=systemCache)
+    vaultService = VaultService(db=db, characterService=characterService)
 
     intents = discord.Intents.default()
     intents.message_content = True
@@ -60,6 +63,7 @@ if __name__ == '__main__':
         await bot.add_cog(AbilityCog(bot, cache, characterService, abilityService))
         await bot.add_cog(InventoryCog(bot, cache, monsterCache, inventoryService, characterService, monsterService))
         await bot.add_cog(DungeonCog(bot, monsterCache, monsterService, dungeonService))
+        await bot.add_cog(VaultCog(bot, characterService, vaultService))
         print("We're alive!")
         return 
 
