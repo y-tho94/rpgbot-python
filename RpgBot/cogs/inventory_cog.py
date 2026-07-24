@@ -223,25 +223,31 @@ class InventoryCog(commands.Cog):
         channel = ctx.channel.id
         player = ctx.author.name
         await self.characterService.GetSetChar(player)
+
         if target == "self":
             target = ctx.author
             response = await self.inventoryService.UseItem(player, target.name, itemName)
             await ctx.reply(json.dumps(response, indent=4))
+
         elif ctx.guild.get_member_named(target) is not None:
             target = ctx.guild.get_member_named(target)
             await self.characterService.GetSetChar(target.name)
             response = await self.inventoryService.UseItem(player, target.name, itemName)
             await ctx.reply(json.dumps(response, indent=4))
-        elif ctx.guild.get_member_named(target) is None:
-            await ctx.reply("Invalid character name")
-            return
+
         elif channel in self.dungeonChatList:
             for i in range(len(self.dungeonChatList)):
                 if channel == self.dungeonChatList[i]:
-                    monster = self.monsterCache.get(i, target)
-                    if monster is not None:
-                        response = await self.monsterService.UseItem(player, monster, itemName, i)
-                        await ctx.reply(json.dumps(response, indent=4))
+                    try:
+                        monster = self.monsterCache.get(i, target)
+                    except Exception as ex:
+                        await ctx.reply("Monster not found in this dungeon")
+                        return
 
+                    response = await self.monsterService.UseItem(player, monster, itemName, i)
+                    await ctx.reply(json.dumps(response, indent=4))
+        else:
+            await ctx.reply("Invalid character name.")
+            return
         await self.inventoryService.DiscardItem(player, itemName)
         return
